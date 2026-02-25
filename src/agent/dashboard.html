@@ -1,1085 +1,1290 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AlphaClaw — AI Trading Signal Network</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-/* ── Tokens ─────────────────────────────────────────────── */
-:root {
-  --bg:      #09090b;
-  --bg2:     #0f0f12;
-  --bg3:     #18181b;
-  --border:  #27272a;
-  --border2: #3f3f46;
-  --text:    #fafafa;
-  --dim:     #71717a;
-  --muted:   #52525b;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaClaw — AI Alpha Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050508;
+      --bg2: #0c0c12;
+      --bg3: #13131d;
+      --border: #1e1e2e;
+      --border2: #2a2a3e;
+      --accent: #7c3aed;
+      --accent2: #a855f7;
+      --accent3: #06b6d4;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --text2: #94a3b8;
+      --text3: #475569;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Space Grotesk', sans-serif;
+    }
 
-  --purple:  #8b5cf6;
-  --purple2: #7c3aed;
-  --purple3: #a78bfa;
-  --green:   #22c55e;
-  --yellow:  #eab308;
-  --red:     #ef4444;
-  --blue:    #3b82f6;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
-}
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-/* ── Reset ───────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,58,237,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.5;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
+    /* Glow orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: .15;
+    }
+    .orb1 { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -200px; }
+    .orb2 { width: 400px; height: 400px; background: var(--accent3); bottom: -100px; right: -100px; }
 
-/* ── Header ──────────────────────────────────────────────── */
-header {
-  background: rgba(9,9,11,.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(39,39,42,.9);
-  padding: 10px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(5,5,8,.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-.logo { display: flex; align-items: center; gap: 10px; }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: -.02em;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+    .logo-sub { color: var(--text2); font-size: .75rem; font-weight: 400; font-family: var(--mono); }
 
-.logo-text {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  color: var(--text);
-  text-shadow: 0 0 20px rgba(139,92,246,.35);
-}
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
 
-.logo-badge {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: .06em;
-  color: var(--purple3);
-  background: rgba(139,92,246,.1);
-  border: 1px solid rgba(139,92,246,.25);
-  border-radius: 4px;
-  padding: 2px 6px;
-}
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .3rem .75rem;
+      border-radius: 100px;
+      font-size: .75rem;
+      font-family: var(--mono);
+      font-weight: 700;
+    }
+    .badge-green { background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.3); color: var(--green); }
+    .badge-yellow { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: var(--yellow); }
+    .badge-red { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: var(--red); }
+    .badge-purple { background: rgba(124,58,237,.15); border: 1px solid rgba(124,58,237,.3); color: var(--accent2); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
 
-/* Service health dots in header */
-.health-bar { display: flex; gap: 14px; }
-.hdot {
-  display: flex; align-items: center; gap: 5px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: .03em;
-  cursor: default;
-  position: relative;
-}
-.hdot:hover .tooltip { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    /* ─── Status Strip ─────────────────────────────────────────────────────── */
+    .status-strip {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: .5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      font-size: .75rem;
+      font-family: var(--mono);
+      color: var(--text2);
+      z-index: 99;
+      position: sticky;
+      top: 64px;
+      flex-wrap: wrap;
+    }
+    .status-strip-left {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .status-indicator {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-indicator.ok { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+    .status-indicator.degraded { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); animation: pulse 1s infinite; }
+    .status-indicator.offline { background: var(--red); box-shadow: 0 0 8px var(--red); }
+    .status-indicator.loading { background: var(--text3); animation: pulse 1s infinite; }
+    .status-label { font-weight: 700; }
+    .status-label.ok { color: var(--green); }
+    .status-label.degraded { color: var(--yellow); }
+    .status-label.offline { color: var(--red); }
+    .status-label.loading { color: var(--text3); }
+    .status-dots {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+    }
+    .status-dot {
+      width: 18px; height: 18px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .55rem;
+      font-weight: 700;
+      cursor: default;
+      transition: all .2s;
+      position: relative;
+    }
+    .status-dot.ok { background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.3); color: var(--green); }
+    .status-dot.error, .status-dot.offline { background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.3); color: var(--red); }
+    .status-dot.unknown { background: rgba(71,85,105,.15); border: 1px solid rgba(71,85,105,.3); color: var(--text3); }
+    .status-dot:hover { transform: scale(1.2); }
+    .status-dot .tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: .5rem .75rem;
+      font-size: .7rem;
+      white-space: nowrap;
+      z-index: 10;
+      color: var(--text);
+      font-weight: 400;
+      box-shadow: 0 4px 12px rgba(0,0,0,.4);
+    }
+    .status-dot:hover .tooltip { display: block; }
+    .status-meta {
+      font-size: .7rem;
+      color: var(--text3);
+    }
+    .status-countdown {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      display: inline-block;
+      vertical-align: middle;
+      animation: spin 10s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-.dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--border);
-  flex-shrink: 0;
-  transition: background .4s, box-shadow .4s;
-}
-.dot.on  { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,.6); }
-.dot.off { background: var(--red); }
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
 
-.tooltip {
-  position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(4px);
-  margin-top: 6px;
-  background: var(--bg3); border: 1px solid var(--border2);
-  border-radius: 6px; padding: 5px 8px;
-  font-size: 10px; color: var(--text); white-space: nowrap;
-  opacity: 0; pointer-events: none;
-  transition: opacity .15s, transform .15s;
-  z-index: 100;
-}
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 4rem 0 3rem;
+    }
+    .hero-label {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: rgba(124,58,237,.1);
+      border: 1px solid rgba(124,58,237,.2);
+      border-radius: 100px;
+      padding: .4rem 1rem;
+      font-size: .75rem;
+      font-family: var(--mono);
+      color: var(--accent2);
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: -.04em;
+      line-height: 1.05;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--accent2), var(--accent3));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text2);
+      max-width: 560px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+    }
 
-/* ── Layout ──────────────────────────────────────────────── */
-main { padding: 16px 24px 40px; max-width: 1100px; margin: 0 auto; }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
 
-/* ── How it works ────────────────────────────────────────── */
-.how-it-works {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  margin-bottom: 14px;
-  overflow: hidden;
-}
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .75rem 1.5rem;
+      border-radius: 10px;
+      font-family: var(--sans);
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #6d28d9);
+      color: #fff;
+      box-shadow: 0 0 30px rgba(124,58,237,.4);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(124,58,237,.6); }
+    .btn-secondary {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border2);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent2); }
 
-.hiw-step {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 16px;
-  border-right: 1px solid var(--border);
-  min-width: 0;
-}
-.hiw-step:last-child { border-right: none; }
+    /* Stats bar */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 3rem;
+    }
+    .stat {
+      background: var(--bg2);
+      padding: 1.25rem 1.5rem;
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: var(--mono);
+      background: linear-gradient(135deg, var(--accent2), var(--accent3));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label { font-size: .75rem; color: var(--text3); margin-top: .25rem; text-transform: uppercase; letter-spacing: .05em; }
 
-.hiw-num {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--purple3);
-  background: rgba(139,92,246,.12);
-  border: 1px solid rgba(139,92,246,.2);
-  border-radius: 50%;
-  width: 22px; height: 22px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
+    /* Hunt form */
+    .hunt-section {
+      margin-bottom: 3rem;
+    }
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      color: var(--text2);
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
 
-.hiw-content strong {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 1px;
-}
-.hiw-content span {
-  font-size: 11px;
-  color: var(--muted);
-}
+    .hunt-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+    .hunt-input-row {
+      display: flex;
+      gap: .75rem;
+    }
+    .hunt-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: .75rem 1rem;
+      font-family: var(--sans);
+      font-size: .95rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .hunt-input:focus { border-color: var(--accent); }
+    .hunt-input::placeholder { color: var(--text3); }
 
-.hiw-arrow {
-  font-size: 14px;
-  color: var(--border2);
-  padding: 0 2px;
-  flex-shrink: 0;
-}
+    .quick-topics {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-top: .75rem;
+    }
+    .topic-chip {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 100px;
+      padding: .3rem .75rem;
+      font-size: .75rem;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all .15s;
+      font-family: var(--mono);
+    }
+    .topic-chip:hover { border-color: var(--accent); color: var(--accent2); background: rgba(124,58,237,.05); }
 
-/* ── Search bar ──────────────────────────────────────────── */
-.search-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
+    /* Stream output */
+    #stream-output {
+      margin-top: 1rem;
+      display: none;
+    }
+    .stream-log {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      font-family: var(--mono);
+      font-size: .78rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .stream-log::-webkit-scrollbar { width: 4px; }
+    .stream-log::-webkit-scrollbar-track { background: transparent; }
+    .stream-log::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-.search-wrap {
-  flex: 1;
-  position: relative;
-}
+    .log-line {
+      padding: .2rem 0;
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      border-bottom: 1px solid rgba(30,30,46,.5);
+    }
+    .log-line:last-child { border-bottom: none; }
+    .log-time { color: var(--text3); white-space: nowrap; flex-shrink: 0; }
+    .log-pay  { color: var(--yellow); }
+    .log-ok   { color: var(--green); }
+    .log-alpha{ color: var(--accent2); }
+    .log-err  { color: var(--red); }
 
-.search-label {
-  position: absolute;
-  left: 12px; top: 50%;
-  transform: translateY(-50%);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: .05em;
-  pointer-events: none;
-  user-select: none;
-}
+    /* Alpha result card */
+    .alpha-result {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 1rem;
+      display: none;
+    }
+    .alpha-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .alpha-rec {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .alpha-conf {
+      font-family: var(--mono);
+      font-size: .85rem;
+      color: var(--text2);
+    }
+    .alpha-signals {
+      display: flex;
+      gap: .4rem;
+      flex-wrap: wrap;
+    }
+    .signal-tag {
+      background: rgba(124,58,237,.1);
+      border: 1px solid rgba(124,58,237,.2);
+      border-radius: 6px;
+      padding: .2rem .5rem;
+      font-family: var(--mono);
+      font-size: .7rem;
+      color: var(--accent2);
+    }
 
-.search-row input {
-  width: 100%;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 14px 10px 80px;
-  color: var(--text);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
-}
-.search-row input::placeholder { color: var(--muted); }
-.search-row input:focus {
-  border-color: var(--purple);
-  box-shadow: 0 0 0 3px rgba(139,92,246,.15);
-}
+    /* Reports grid */
+    .reports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
 
-.hunt-btn {
-  position: relative;
-  background: linear-gradient(135deg, var(--purple2) 0%, var(--purple) 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 22px;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: .02em;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: opacity .2s, transform .1s;
-}
-.hunt-btn::after {
-  content: '';
-  position: absolute; inset: 0;
-  border-radius: 8px;
-  box-shadow: 0 0 0 0 rgba(139,92,246,.5);
-  transition: box-shadow .2s;
-}
-.hunt-btn:hover::after   { box-shadow: 0 0 20px 4px rgba(139,92,246,.25); }
-.hunt-btn:active         { transform: scale(.97); }
-.hunt-btn:disabled       { opacity: .35; cursor: not-allowed; }
-.hunt-btn:disabled::after{ box-shadow: none; }
+    .report-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .report-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(124,58,237,.05), transparent);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .report-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .report-card:hover::before { opacity: 1; }
 
-/* ── Two-column grid ─────────────────────────────────────── */
-.grid {
-  display: grid;
-  grid-template-columns: 290px 1fr;
-  gap: 12px;
-  align-items: start;
-}
+    .report-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .75rem;
+    }
+    .report-id {
+      font-family: var(--mono);
+      font-size: .7rem;
+      color: var(--text3);
+    }
+    .report-price {
+      font-family: var(--mono);
+      font-size: .75rem;
+      color: var(--green);
+      background: rgba(16,185,129,.08);
+      border: 1px solid rgba(16,185,129,.2);
+      border-radius: 6px;
+      padding: .2rem .5rem;
+    }
+    .report-topic {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: .5rem;
+      color: var(--text);
+    }
+    .report-preview {
+      font-size: .82rem;
+      color: var(--text2);
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+    .report-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .report-time { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
 
-/* ── Cards ───────────────────────────────────────────────── */
-.card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-}
-.card + .card { margin-top: 10px; }
+    /* Services status */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: .75rem;
+      margin-bottom: 3rem;
+    }
+    .service-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      transition: all .2s;
+    }
+    .service-card:hover { border-color: var(--border2); }
+    .service-card.svc-ok { border-left: 3px solid var(--green); }
+    .service-card.svc-err { border-left: 3px solid var(--red); }
+    .service-card.svc-off { border-left: 3px solid var(--text3); }
+    .service-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .status-ok { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .status-err { background: var(--red); box-shadow: 0 0 8px var(--red); }
+    .status-off { background: var(--text3); }
+    .service-info { flex: 1; min-width: 0; }
+    .service-name { font-size: .82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .service-details {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-top: .3rem;
+    }
+    .service-price { font-size: .7rem; color: var(--text3); font-family: var(--mono); }
+    .service-latency {
+      font-size: .65rem;
+      font-family: var(--mono);
+      color: var(--text3);
+      background: var(--bg3);
+      border-radius: 4px;
+      padding: .1rem .35rem;
+    }
+    .service-latency.fast { color: var(--green); }
+    .service-latency.medium { color: var(--yellow); }
+    .service-latency.slow { color: var(--red); }
+    .service-port {
+      font-size: .65rem;
+      font-family: var(--mono);
+      color: var(--text3);
+    }
 
-.card-title {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  margin-bottom: 4px;
-}
-.card-desc {
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 14px;
-}
+    /* Tx feed */
+    .tx-feed {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 3rem;
+    }
+    .tx-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tx-title { font-weight: 600; font-size: .9rem; }
+    .tx-item {
+      padding: .85rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-family: var(--mono);
+      font-size: .75rem;
+      transition: background .15s;
+    }
+    .tx-item:last-child { border-bottom: none; }
+    .tx-item:hover { background: var(--bg3); }
+    .tx-dir { color: var(--text3); }
+    .tx-amount { color: var(--green); font-weight: 700; margin-left: auto; }
+    .tx-hash { color: var(--text3); }
+    .tx-addr { color: var(--accent2); }
+    .tx-empty {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text3);
+      font-size: .85rem;
+    }
 
-/* ── Flow diagram ────────────────────────────────────────── */
-.flow-node {
-  display: flex; align-items: center; gap: 10px;
-  padding: 7px 0;
-  opacity: .3;
-  transition: opacity .4s;
-}
-.flow-node.always-lit { opacity: 1; }
-.flow-node.lit  { opacity: 1; }
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.8);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 640px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 2rem;
+    }
+    .modal h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; }
+    .modal-close {
+      float: right;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      color: var(--text2);
+      padding: .4rem .75rem;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: .85rem;
+      transition: all .15s;
+    }
+    .modal-close:hover { color: var(--text); border-color: var(--text2); }
 
-.ficon {
-  width: 32px; height: 32px; border-radius: 8px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; flex-shrink: 0;
-  transition: border-color .35s, box-shadow .35s;
-}
-.flow-node.lit  .ficon {
-  border-color: var(--purple);
-  box-shadow: 0 0 12px rgba(139,92,246,.3);
-  animation: pulse-purple 1.6s infinite;
-}
-.flow-node.done .ficon {
-  border-color: var(--green);
-  box-shadow: 0 0 8px rgba(34,197,94,.25);
-  animation: none;
-}
+    .report-detail-section { margin-bottom: 1.5rem; }
+    .report-detail-label {
+      font-size: .72rem;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: .5rem;
+    }
+    .breakdown-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: .6rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .83rem;
+    }
+    .breakdown-item:last-child { border-bottom: none; }
+    .breakdown-key { color: var(--text2); }
+    .breakdown-val { color: var(--text); font-family: var(--mono); font-size: .78rem; max-width: 55%; text-align: right; }
 
-.fname   { font-size: 12px; font-weight: 600; flex: 1; color: var(--text); }
-.fdesc   { font-size: 10px; color: var(--muted); margin-top: 1px; }
-.fdetail { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 1px; letter-spacing: .02em; }
+    .buy-cta {
+      background: linear-gradient(135deg, var(--bg3), var(--bg));
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .buy-cta p { color: var(--text2); font-size: .85rem; margin-bottom: 1rem; }
 
-/* Badges */
-.badge {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  padding: 2px 7px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  background: var(--bg3);
-  color: var(--muted);
-  transition: background .3s, color .3s, border-color .3s;
-}
-.badge.paying { background: rgba(234,179,8,.08);  color: var(--yellow); border-color: rgba(234,179,8,.2); }
-.badge.paid   { background: rgba(34,197,94,.08);  color: var(--green);  border-color: rgba(34,197,94,.2); }
-.badge.err    { background: rgba(239,68,68,.08);  color: var(--red);    border-color: rgba(239,68,68,.2); }
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: gap;
+      color: var(--text3);
+      font-size: .78rem;
+      font-family: var(--mono);
+    }
 
-/* Connector line */
-.vline {
-  width: 1px; height: 12px;
-  background: var(--border);
-  margin: 0 0 0 15px;
-  transition: background .35s;
-}
-.vline.lit { background: var(--purple); box-shadow: 0 0 6px rgba(139,92,246,.4); }
-
-/* Sub-nodes */
-.sub-nodes { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
-
-.sub-node {
-  display: flex; align-items: flex-start; gap: 8px;
-  padding: 8px 10px;
-  border-radius: 7px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  opacity: .3;
-  transition: opacity .4s, border-color .35s, box-shadow .35s;
-}
-.sub-node.lit  {
-  opacity: 1;
-  border-color: rgba(139,92,246,.5);
-  box-shadow: 0 0 8px rgba(139,92,246,.1);
-}
-.sub-node.done {
-  opacity: 1;
-  border-color: rgba(34,197,94,.4);
-  box-shadow: 0 0 6px rgba(34,197,94,.08);
-}
-
-.sub-icon { font-size: 14px; margin-top: 1px; flex-shrink: 0; }
-.sub-info  { flex: 1; min-width: 0; }
-.sub-name   { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; }
-.sub-desc   { font-size: 10px; color: var(--muted); margin-top: 2px; }
-.sub-detail { font-family: var(--font-mono); font-size: 9.5px; color: var(--muted); margin-top: 2px; }
-.sub-right  { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
-.sub-amt    { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--yellow); }
-
-/* ── Alpha panel ─────────────────────────────────────────── */
-.idle-msg {
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 12px;
-  padding: 20px 10px;
-  color: var(--muted); font-size: 12px; text-align: center;
-}
-.idle-icon { font-size: 32px; }
-.idle-title { font-size: 14px; font-weight: 600; color: var(--text); }
-.idle-hint  { font-size: 11px; line-height: 1.6; }
-.idle-examples {
-  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
-  margin-top: 4px;
-}
-.idle-chip {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--purple3);
-  background: rgba(139,92,246,.08);
-  border: 1px solid rgba(139,92,246,.2);
-  border-radius: 20px;
-  padding: 3px 10px;
-  cursor: pointer;
-  transition: background .2s;
-}
-.idle-chip:hover { background: rgba(139,92,246,.15); }
-
-/* Recommendation box */
-.recommendation {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: .02em;
-  padding: 14px 16px;
-  border-radius: 8px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  text-align: center;
-  transition: color .4s, border-color .4s, background .4s;
-  margin-bottom: 14px;
-}
-.rec-strong { color: var(--green);   border-color: rgba(34,197,94,.3);  background: rgba(34,197,94,.05); }
-.rec-mod    { color: var(--purple3); border-color: rgba(139,92,246,.3); background: rgba(139,92,246,.05); }
-.rec-watch  { color: var(--yellow);  border-color: rgba(234,179,8,.25); }
-.rec-wait   { color: var(--muted); }
-
-/* Confidence section */
-.conf-section { margin-bottom: 14px; }
-.conf-header {
-  display: flex; justify-content: space-between; align-items: baseline;
-  margin-bottom: 6px;
-}
-.conf-label { font-size: 11px; color: var(--muted); }
-.conf-value {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--purple3);
-}
-.conf-text {
-  font-size: 11px;
-  color: var(--muted);
-  margin-left: 6px;
-}
-
-.bar-track {
-  height: 4px;
-  background: var(--bg3);
-  border-radius: 99px;
-  overflow: hidden;
-  margin-bottom: 5px;
-}
-.bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--purple2), var(--purple3));
-  border-radius: 99px;
-  width: 0;
-  transition: width 1s cubic-bezier(.4,0,.2,1);
-  box-shadow: 0 0 8px rgba(139,92,246,.5);
-}
-.bar-scale {
-  display: flex; justify-content: space-between;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--muted);
-  margin-bottom: 14px;
-}
-
-/* Evidence */
-.ev-label {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  margin-bottom: 7px;
-}
-.sig-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
-.sig-item {
-  display: flex; align-items: center; gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 6px 10px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--dim);
-  opacity: 0; transform: translateY(4px);
-  transition: opacity .3s, transform .3s;
-}
-.sig-item.show { opacity: 1; transform: none; }
-.sig-tick { color: var(--green); font-size: 10px; }
-
-/* Breakdown grid */
-.bd-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
-.bd-card {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  opacity: .3;
-  transition: opacity .4s, border-color .35s;
-}
-.bd-card.show { opacity: 1; }
-.bd-svc {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 500;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  margin-bottom: 5px;
-}
-.bd-val { font-size: 12px; font-weight: 600; line-height: 1.3; }
-.bd-sub { font-family: var(--font-mono); font-size: 9.5px; color: var(--muted); margin-top: 4px; word-break: break-word; }
-
-/* Ledger */
-.ledger { padding: 12px 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; }
-.led-title {
-  font-family: var(--font-mono);
-  font-size: 9px; font-weight: 500;
-  color: var(--muted);
-  text-transform: uppercase; letter-spacing: .12em;
-  margin-bottom: 10px;
-}
-.led-row {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 11px; margin-top: 5px; color: var(--dim);
-}
-.led-row span:last-child { font-family: var(--font-mono); font-size: 11px; }
-.led-sep { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; }
-
-/* Activity log */
-.log {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 10px 12px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--muted);
-  max-height: 110px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-.le         { padding: 1.5px 0; line-height: 1.6; }
-.le .ts     { color: var(--border2); }
-.le .ok     { color: var(--green); }
-.le .pay    { color: var(--yellow); }
-.le .err    { color: var(--red); }
-.le .info   { color: var(--purple3); }
-
-/* Spinner */
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin {
-  display: inline-block; width: 12px; height: 12px;
-  border: 2px solid var(--border);
-  border-top-color: var(--purple);
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
-  vertical-align: middle;
-}
-
-@keyframes pulse-purple {
-  0%   { box-shadow: 0 0 0 0 rgba(139,92,246,.5); }
-  70%  { box-shadow: 0 0 0 8px rgba(139,92,246,0); }
-  100% { box-shadow: 0 0 0 0 rgba(139,92,246,0); }
-}
-
-@media (max-width: 720px) {
-  .grid { grid-template-columns: 1fr; }
-  .health-bar { display: none; }
-  .bd-grid { grid-template-columns: 1fr; }
-  .how-it-works { flex-direction: column; }
-  .hiw-step { border-right: none; border-bottom: 1px solid var(--border); }
-  .hiw-step:last-child { border-bottom: none; }
-  .hiw-arrow { display: none; }
-}
-</style>
+    @media (max-width: 600px) {
+      main { padding: 1rem; }
+      .hero { padding: 2rem 0; }
+      .hero h1 { font-size: 2rem; }
+      .hunt-input-row { flex-direction: column; }
+    }
+  </style>
 </head>
 <body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
 
-<header>
-  <div class="logo">
-    <span style="font-size:20px">⚡</span>
-    <div>
-      <div class="logo-text">ALPHACLAW</div>
-    </div>
-    <div class="logo-badge">AI Signal Network</div>
-  </div>
-  <div class="health-bar" id="healthBar">
-    <div class="hdot">
-      <span class="dot" id="dot-sentiment"></span>
-      Mood AI
-      <div class="tooltip">Sentiment Analysis — reads market mood from text</div>
-    </div>
-    <div class="hdot">
-      <span class="dot" id="dot-polymarket"></span>
-      Markets
-      <div class="tooltip">Prediction Markets — scans Polymarket for signals</div>
-    </div>
-    <div class="hdot">
-      <span class="dot" id="dot-defi"></span>
-      DeFi
-      <div class="tooltip">DeFi Trends — tracks token momentum on-chain</div>
-    </div>
-    <div class="hdot">
-      <span class="dot" id="dot-hunter"></span>
-      Hunter
-      <div class="tooltip">AlphaClaw Hunter — the main AI orchestrator agent</div>
-    </div>
-  </div>
-</header>
-
-<main>
-
-  <!-- How it works -->
-  <div class="how-it-works">
-    <div class="hiw-step">
-      <div class="hiw-num">1</div>
-      <div class="hiw-content">
-        <strong>You enter a topic</strong>
-        <span>Type a coin, trend, or question</span>
+  <nav>
+    <div class="logo">
+      <div class="logo-icon">🐾</div>
+      <div>
+        AlphaClaw
+        <div class="logo-sub">AI Alpha Marketplace</div>
       </div>
     </div>
-    <div class="hiw-arrow">›</div>
-    <div class="hiw-step">
-      <div class="hiw-num">2</div>
-      <div class="hiw-content">
-        <strong>AI agent pays for data</strong>
-        <span>Buys signals from 3 sources using crypto micropayments</span>
-      </div>
+    <div class="nav-right">
+      <span class="badge badge-green"><span class="dot"></span> LIVE</span>
+      <span class="badge badge-purple">Base Sepolia · x402</span>
     </div>
-    <div class="hiw-arrow">›</div>
-    <div class="hiw-step">
-      <div class="hiw-num">3</div>
-      <div class="hiw-content">
-        <strong>Get your trading signal</strong>
-        <span>Receive a synthesized buy/watch/wait recommendation</span>
-      </div>
+  </nav>
+
+  <!-- Real-time Status Strip -->
+  <div class="status-strip" id="status-strip">
+    <div class="status-strip-left">
+      <div class="status-indicator loading" id="strip-indicator"></div>
+      <span class="status-label loading" id="strip-label">Checking...</span>
+    </div>
+    <div class="status-dots" id="strip-dots">
+      <!-- populated by JS -->
+    </div>
+    <div class="status-meta">
+      <span id="strip-latency">--</span>
+      &middot;
+      <span id="strip-checked">checking</span>
+      &middot;
+      <span class="status-countdown" id="strip-countdown"></span>
     </div>
   </div>
 
-  <!-- Search -->
-  <div class="search-row">
-    <div class="search-wrap">
-      <span class="search-label">TOPIC</span>
-      <input id="topicInput" type="text"
-             placeholder="e.g. ethereum, solana, DeFi summer, bitcoin rally..."
-             value="ethereum DeFi bullish breakout" />
-    </div>
-    <button class="hunt-btn" id="huntBtn" onclick="startHunt()">⚡ Hunt Alpha</button>
-  </div>
-
-  <div class="grid">
-
-    <!-- Left: Payment flow -->
-    <div>
-      <div class="card">
-        <div class="card-title">Live Payment Flow</div>
-        <div class="card-desc">Watch the AI agent pay each data source in real time</div>
-
-        <!-- YOU -->
-        <div class="flow-node always-lit" id="fn-you">
-          <div class="ficon">👤</div>
-          <div style="flex:1">
-            <div class="fname">You</div>
-            <div class="fdesc">investor / trader</div>
-          </div>
-          <div style="font-family:var(--font-mono);font-size:11px;color:var(--yellow);font-weight:600">$0.05</div>
-        </div>
-
-        <div class="vline" id="vl-hunter"></div>
-
-        <!-- HUNTER -->
-        <div class="flow-node" id="fn-hunter">
-          <div class="ficon">🦅</div>
-          <div style="flex:1">
-            <div class="fname">AlphaClaw Hunter</div>
-            <div class="fdesc">your autonomous AI agent</div>
-          </div>
-          <div class="badge" id="badge-hunter">idle</div>
-        </div>
-
-        <div class="vline" id="vl-subs"></div>
-
-        <!-- SUB-SERVICES -->
-        <div class="sub-nodes">
-
-          <div class="sub-node" id="sn-sentiment">
-            <span class="sub-icon">🧠</span>
-            <div class="sub-info">
-              <div class="sub-name">Mood Analysis</div>
-              <div class="sub-desc">Reads bullish/bearish signals from news and text</div>
-              <div class="sub-detail" id="snd-sentiment">waiting...</div>
-            </div>
-            <div class="sub-right">
-              <span class="sub-amt">$0.01</span>
-              <span class="badge" id="sb-sentiment">—</span>
-            </div>
-          </div>
-
-          <div class="sub-node" id="sn-polymarket">
-            <span class="sub-icon">📊</span>
-            <div class="sub-info">
-              <div class="sub-name">Prediction Markets</div>
-              <div class="sub-desc">Checks crowd wisdom on Polymarket odds</div>
-              <div class="sub-detail" id="snd-polymarket">waiting...</div>
-            </div>
-            <div class="sub-right">
-              <span class="sub-amt">$0.02</span>
-              <span class="badge" id="sb-polymarket">—</span>
-            </div>
-          </div>
-
-          <div class="sub-node" id="sn-defi">
-            <span class="sub-icon">💎</span>
-            <div class="sub-info">
-              <div class="sub-name">DeFi Trends</div>
-              <div class="sub-desc">Scans top tokens for momentum and volume spikes</div>
-              <div class="sub-detail" id="snd-defi">waiting...</div>
-            </div>
-            <div class="sub-right">
-              <span class="sub-amt">$0.015</span>
-              <span class="badge" id="sb-defi">—</span>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- Activity log -->
-      <div class="card">
-        <div class="card-title">Activity Log</div>
-        <div class="log" id="logEl"></div>
+  <main>
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-label">⚡ SURGE × OpenClaw Hackathon 2026</div>
+      <h1>The <span>Alpha Marketplace</span><br/>for AI Agents</h1>
+      <p>5 autonomous agents buy and sell intelligence via x402 micropayments. One query. Five data sources. Real on-chain transactions.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="scrollToHunt()">🔍 Hunt Alpha</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('services-section').scrollIntoView({behavior:'smooth'})">📊 Network Status</button>
       </div>
     </div>
 
-    <!-- Right: Results -->
-    <div>
-      <!-- Alpha signal -->
-      <div class="card">
-        <div class="card-title">Trading Signal</div>
-        <div class="card-desc">AI-synthesized recommendation based on all 3 data sources</div>
-        <div id="alphaPanel">
-          <div class="idle-msg">
-            <div class="idle-icon">🎯</div>
-            <div class="idle-title">Ready to hunt alpha</div>
-            <div class="idle-hint">
-              "Alpha" = a trading opportunity where you have an <strong>informational edge</strong> over the market.<br>
-              The AI agent buys data from 3 independent sources, then synthesizes a signal.
-            </div>
-            <div class="idle-examples">
-              <span class="idle-chip" onclick="setTopic('ethereum')">ethereum</span>
-              <span class="idle-chip" onclick="setTopic('solana breakout')">solana breakout</span>
-              <span class="idle-chip" onclick="setTopic('DeFi summer')">DeFi summer</span>
-              <span class="idle-chip" onclick="setTopic('bitcoin halving')">bitcoin halving</span>
-            </div>
-          </div>
-        </div>
+    <!-- Stats -->
+    <div class="stats" id="stats">
+      <div class="stat">
+        <div class="stat-val" id="stat-services">6</div>
+        <div class="stat-label">Active Agents</div>
       </div>
+      <div class="stat">
+        <div class="stat-val" id="stat-reports">—</div>
+        <div class="stat-label">Cached Reports</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">$0.039</div>
+        <div class="stat-label">Buy Cost</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">$0.050</div>
+        <div class="stat-label">Sell Price</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" style="color: var(--green);">$0.011</div>
+        <div class="stat-label">Margin / Hunt</div>
+      </div>
+    </div>
 
-      <!-- Breakdown by source -->
-      <div class="card">
-        <div class="card-title">Signal Breakdown by Source</div>
-        <div class="card-desc">What each data service contributed to the final signal</div>
-        <div class="bd-grid">
-          <div class="bd-card" id="bd-sentiment">
-            <div class="bd-svc">🧠 Mood Analysis</div>
-            <div class="bd-val" style="color:var(--muted)">—</div>
-            <div class="bd-sub">awaiting hunt...</div>
-          </div>
-          <div class="bd-card" id="bd-polymarket">
-            <div class="bd-svc">📊 Prediction Markets</div>
-            <div class="bd-val" style="color:var(--muted)">—</div>
-            <div class="bd-sub">awaiting hunt...</div>
-          </div>
-          <div class="bd-card" id="bd-defi">
-            <div class="bd-svc">💎 DeFi Trends</div>
-            <div class="bd-val" style="color:var(--muted)">—</div>
-            <div class="bd-sub">awaiting hunt...</div>
+    <!-- Hunt -->
+    <div class="hunt-section" id="hunt">
+      <div class="section-title">🔍 Run a Hunt</div>
+      <div class="hunt-box">
+        <div class="hunt-input-row">
+          <input class="hunt-input" id="hunt-topic" type="text"
+            placeholder="e.g. Trump impeachment 2026, Fed rate cut, Bitcoin ETF..." />
+          <button class="btn btn-primary" id="hunt-btn" onclick="runHunt()">Hunt →</button>
+        </div>
+        <div class="quick-topics">
+          <span class="topic-chip" onclick="setTopic(this)">Trump impeachment</span>
+          <span class="topic-chip" onclick="setTopic(this)">Fed rate cut March</span>
+          <span class="topic-chip" onclick="setTopic(this)">Bitcoin ETF approval</span>
+          <span class="topic-chip" onclick="setTopic(this)">Ethereum DeFi</span>
+          <span class="topic-chip" onclick="setTopic(this)">Base L2 yields</span>
+        </div>
+
+        <div id="stream-output">
+          <div class="stream-log" id="stream-log"></div>
+          <div class="alpha-result" id="alpha-result">
+            <div class="alpha-header">
+              <div class="alpha-rec" id="alpha-rec"></div>
+              <div class="alpha-conf" id="alpha-conf"></div>
+            </div>
+            <div class="alpha-signals" id="alpha-signals"></div>
           </div>
         </div>
       </div>
     </div>
 
-  </div>
-</main>
-
-<script>
-/* ── Helpers ─────────────────────────────────────────────── */
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function setTopic(t) {
-  document.getElementById('topicInput').value = t;
-}
-
-/* ── Log ─────────────────────────────────────────────── */
-function log(msg, type) {
-  const el = document.getElementById('logEl');
-  const ts = new Date().toLocaleTimeString();
-  const d = document.createElement('div');
-  d.className = 'le';
-  d.innerHTML = `<span class="ts">[${ts}]</span> <span class="${type || ''}">${msg}</span>`;
-  el.appendChild(d);
-  el.scrollTop = el.scrollHeight;
-}
-
-/* ── Health check ─────────────────────────────────────── */
-async function checkHealth() {
-  try {
-    const r = await fetch('/health-all', { signal: AbortSignal.timeout(5000) });
-    const data = await r.json();
-    const nameMap = {
-      'alphaclaw-hunter':         'hunter',
-      'crypto-sentiment':         'sentiment',
-      'polymarket-alpha-scanner': 'polymarket',
-      'defi-alpha-scanner':       'defi',
-    };
-    for (const svc of (data.services || [])) {
-      const key = nameMap[svc.name];
-      const dot = document.getElementById('dot-' + key);
-      if (dot) dot.className = 'dot ' + (svc.status === 'ok' ? 'on' : 'off');
-    }
-  } catch {
-    ['hunter','sentiment','polymarket','defi'].forEach(k => {
-      const dot = document.getElementById('dot-' + k);
-      if (dot) dot.className = 'dot off';
-    });
-  }
-}
-
-/* ── Flow state helpers ───────────────────────────────── */
-function nodeClass(id, cls) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.remove('lit', 'done');
-  if (cls) el.classList.add(cls);
-}
-
-function badge(id, text, cls) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text;
-  el.className = 'badge ' + (cls || '');
-}
-
-/* ── Reset flow ─────────────────────────────────────────── */
-function resetFlow() {
-  nodeClass('fn-hunter', '');
-  ['sentiment', 'polymarket', 'defi'].forEach(s => {
-    nodeClass('sn-' + s, '');
-    badge('sb-' + s, '—', '');
-    document.getElementById('snd-' + s).textContent = 'waiting...';
-    const bd = document.getElementById('bd-' + s);
-    bd.classList.remove('show');
-    bd.querySelector('.bd-val').textContent = '—';
-    bd.querySelector('.bd-val').style.color = 'var(--muted)';
-    bd.querySelector('.bd-sub').textContent = 'awaiting hunt...';
-  });
-  badge('badge-hunter', 'idle', '');
-  document.getElementById('vl-hunter').classList.remove('lit');
-  document.getElementById('vl-subs').classList.remove('lit');
-}
-
-/* ── Service name → dashboard key ────────────────────── */
-const SVC_KEY = {
-  'crypto-sentiment':         'sentiment',
-  'polymarket-alpha-scanner': 'polymarket',
-  'defi-alpha-scanner':       'defi',
-};
-
-const SVC_LABEL = {
-  'crypto-sentiment':         'Mood Analysis',
-  'polymarket-alpha-scanner': 'Prediction Markets',
-  'defi-alpha-scanner':       'DeFi Trends',
-};
-
-/* ── Breakdown update ─────────────────────────────────── */
-function updateBreakdown(svc, data) {
-  const key = SVC_KEY[svc];
-  if (!key || !data) return;
-  const card = document.getElementById('bd-' + key);
-  let val = '—', sub = '', color = 'var(--muted)';
-
-  if (key === 'sentiment' && data.result) {
-    const r = data.result;
-    const labelNice = r.label.replace(/_/g, ' ');
-    val = labelNice.toUpperCase();
-    sub = `score ${r.score} · ${r.confidence} confidence · ${r.wordCount} words analyzed`;
-    color = r.label.includes('bull') ? 'var(--green)' : r.label.includes('bear') ? 'var(--red)' : 'var(--dim)';
-  } else if (key === 'polymarket' && data.result) {
-    const top = data.result.opportunities?.[0];
-    val = top ? top.alphaSignal + ' signal' : 'no signal';
-    sub = top ? `yes @ ${top.yesPrice} · "${(top.question||'').slice(0,40)}…"` : data.result.summary || '';
-    color = top?.alphaSignal === 'HIGH' ? 'var(--green)' : top?.alphaSignal === 'MEDIUM' ? 'var(--yellow)' : 'var(--muted)';
-  } else if (key === 'defi' && data.result) {
-    const top = data.result.topOpportunity;
-    val = top ? `${top.symbol} is ${top.alphaLevel}` : 'no pick';
-    sub = top ? `${top.change24h > 0 ? '+' : ''}${top.change24h}% today · ${(top.suggestedAction||'').slice(0,40)}` : '';
-    color = top?.alphaLevel === 'HOT' ? 'var(--red)' : top?.alphaLevel === 'WARM' ? 'var(--yellow)' : 'var(--muted)';
-  }
-
-  card.querySelector('.bd-val').textContent = val;
-  card.querySelector('.bd-val').style.color = color;
-  card.querySelector('.bd-sub').textContent = sub;
-  card.classList.add('show');
-}
-
-/* ── Confidence label ─────────────────────────────────── */
-function confText(pct) {
-  if (pct >= 75) return 'Very Strong';
-  if (pct >= 50) return 'Moderate';
-  if (pct >= 30) return 'Weak';
-  return 'Insufficient';
-}
-
-/* ── Alpha render ─────────────────────────────────────── */
-function renderAlpha(alpha) {
-  const conf    = parseInt(alpha.confidence) || 0;
-  const recCls  = conf >= 75 ? 'rec-strong' : conf >= 50 ? 'rec-mod' : conf >= 30 ? 'rec-watch' : 'rec-wait';
-  const rec     = (alpha.recommendation || '').replace(/[🚀📈👀⏳]/g, '').trim();
-  const cText   = confText(conf);
-
-  const sigsHtml = (alpha.signals || []).map((s, i) => {
-    // Make signal labels human-readable
-    const nice = s
-      .replace('sentiment:', 'Mood: ')
-      .replace('polymarket:', 'Prediction market: ')
-      .replace('defi:', 'DeFi token: ')
-      .replace(/_/g, ' ');
-    return `<div class="sig-item" id="si-${i}"><span class="sig-tick">✓</span><span>${escHtml(nice)}</span></div>`;
-  }).join('');
-
-  document.getElementById('alphaPanel').innerHTML = `
-    <div class="recommendation ${recCls}">${escHtml(rec)}</div>
-
-    <div class="conf-section">
-      <div class="conf-header">
-        <span class="conf-label">Confidence score <span class="conf-text">— how many signals agree</span></span>
-        <span class="conf-value">${alpha.confidence} <span class="conf-text">${cText}</span></span>
+    <!-- Services -->
+    <div class="section-title" id="services-section">⚙️ Network Services</div>
+    <div class="services-grid" id="services-grid">
+      <div class="service-card">
+        <div class="service-status status-off"></div>
+        <div class="service-info">
+          <div class="service-name">Loading...</div>
+          <div class="service-price">checking</div>
+        </div>
       </div>
-      <div class="bar-track"><div class="bar-fill" id="confBar"></div></div>
-      <div class="bar-scale"><span>Weak</span><span>Moderate</span><span>Strong</span></div>
     </div>
 
-    <div class="ev-label">Supporting evidence</div>
-    <div class="sig-list">${sigsHtml || '<div class="sig-item show"><span class="sig-tick" style="color:var(--muted)">—</span><span>No confirming signals</span></div>'}</div>
-
-    <div class="ledger">
-      <div class="led-title">💸 Transparent payment trail</div>
-      <div class="led-row"><span>You paid the Hunter</span><span style="color:var(--yellow)">$0.050 USDC</span></div>
-      <div class="led-row"><span>Hunter → Mood Analysis</span><span style="color:var(--yellow)">$0.010</span></div>
-      <div class="led-row"><span>Hunter → Prediction Markets</span><span style="color:var(--yellow)">$0.020</span></div>
-      <div class="led-row"><span>Hunter → DeFi Trends</span><span style="color:var(--yellow)">$0.015</span></div>
-      <div class="led-row led-sep"><span>Hunter keeps as margin</span><span style="color:var(--green)">$0.005</span></div>
+    <!-- Reports -->
+    <div class="section-title">📦 Available Reports</div>
+    <div id="reports-container">
+      <div class="reports-grid" id="reports-grid">
+        <div style="color: var(--text3); font-size:.85rem; grid-column:1/-1; padding:2rem; text-align:center;">
+          No reports yet — run a hunt to generate one
+        </div>
+      </div>
     </div>
-  `;
 
-  requestAnimationFrame(() => {
-    const bar = document.getElementById('confBar');
-    if (bar) bar.style.width = Math.min(conf, 100) + '%';
-    (alpha.signals || []).forEach((_, i) => setTimeout(() => {
-      const el = document.getElementById('si-' + i);
-      if (el) el.classList.add('show');
-    }, i * 120));
-  });
-}
+    <!-- Tx Feed -->
+    <div class="section-title">⚡ Recent Transactions</div>
+    <div class="tx-feed">
+      <div class="tx-header">
+        <span class="tx-title">x402 Payment Stream</span>
+        <span class="badge badge-green" style="font-size:.7rem;"><span class="dot"></span> Base Sepolia</span>
+      </div>
+      <div id="tx-list">
+        <div class="tx-empty">Transactions will appear here after a hunt</div>
+      </div>
+    </div>
+  </main>
 
-/* ── Error / idle states ──────────────────────────────── */
-function resetToIdle(msg) {
-  document.getElementById('alphaPanel').innerHTML = `
-    <div class="idle-msg">
-      <div style="font-size:28px">⚠️</div>
-      <div class="idle-title" style="color:var(--red)">Hunt failed</div>
-      <div class="idle-hint" style="color:var(--red)">${escHtml(msg)}</div>
-      <div class="idle-hint">Make sure all services are running:<br><code style="font-family:var(--font-mono);color:var(--purple3)">npm start</code></div>
-    </div>`;
-}
+  <!-- Report Modal -->
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal" id="modal-content">
+      <button class="modal-close" onclick="closeModal()">✕ Close</button>
+      <h2 id="modal-title">Alpha Report</h2>
+      <div id="modal-body"></div>
+    </div>
+  </div>
 
-/* ── Hunt via SSE stream ──────────────────────────────── */
-let hunting = false;
+  <footer>
+    <span>🐾 AlphaClaw Network · Base Sepolia · x402</span>
+    <span>SURGE × OpenClaw Hackathon 2026</span>
+  </footer>
 
-async function startHunt() {
-  if (hunting) return;
-  hunting = true;
+  <script>
+    const API = '';
+    let txLog = [];
 
-  const topic = document.getElementById('topicInput').value.trim() || 'ethereum DeFi bullish';
-  const btn   = document.getElementById('huntBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span> Hunting...';
+    // ─── Utils ───────────────────────────────────────────────────────────────
 
-  resetFlow();
-  document.getElementById('alphaPanel').innerHTML = `
-    <div class="idle-msg">
-      <span class="spin" style="width:22px;height:22px;border-width:3px"></span>
-      <div class="idle-title">Agent is hunting...</div>
-      <div class="idle-hint">Paying for data from 3 sources, please wait</div>
-    </div>`;
-
-  log(`Starting hunt — topic: "${topic}"`, 'info');
-
-  try {
-    await streamHunt(topic);
-  } catch (err) {
-    log('Error: ' + err.message, 'err');
-    badge('badge-hunter', 'error', 'err');
-    resetToIdle(err.message);
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = '⚡ Hunt Alpha';
-  hunting = false;
-}
-
-function streamHunt(topic) {
-  return new Promise((resolve, reject) => {
-    const es = new EventSource('/stream?topic=' + encodeURIComponent(topic));
-    let finished = false;
-
-    function finish(ok, err) {
-      if (finished) return;
-      finished = true;
-      es.close();
-      if (ok) resolve(); else reject(err);
+    function timeAgo(iso) {
+      const d = Math.floor((Date.now() - new Date(iso)) / 1000);
+      if (d < 60) return `${d}s ago`;
+      if (d < 3600) return `${Math.floor(d/60)}m ago`;
+      return `${Math.floor(d/3600)}h ago`;
     }
 
-    const guard = setTimeout(() => finish(false, new Error('Timed out after 28s — is the hunter running?')), 28000);
+    function shortAddr(addr) {
+      return addr ? addr.slice(0,6) + '…' + addr.slice(-4) : '—';
+    }
 
-    es.addEventListener('start', e => {
-      clearTimeout(guard);
-      const d = JSON.parse(e.data);
-      log(`Hunt started for: "${d.topic}"`, 'info');
-      nodeClass('fn-hunter', 'lit');
-      badge('badge-hunter', 'active', 'paying');
-      document.getElementById('vl-hunter').classList.add('lit');
-    });
+    function shortHash(h) {
+      return h ? h.slice(0,10) + '…' : '—';
+    }
 
-    es.addEventListener('paying', e => {
-      const d = JSON.parse(e.data);
-      const key = SVC_KEY[d.service];
-      const label = SVC_LABEL[d.service] || d.service;
-      if (key) {
-        nodeClass('sn-' + key, 'lit');
-        badge('sb-' + key, 'paying', 'paying');
-        document.getElementById('snd-' + key).textContent = 'Sending ' + d.amount + '…';
-        document.getElementById('vl-subs').classList.add('lit');
-      }
-      log(`Paying ${label} — ${d.amount} USDC`, 'pay');
-    });
+    function setTopic(el) {
+      document.getElementById('hunt-topic').value = el.textContent;
+    }
 
-    es.addEventListener('result', e => {
-      const d = JSON.parse(e.data);
-      const key = SVC_KEY[d.service];
-      const label = SVC_LABEL[d.service] || d.service;
-      if (key) {
-        nodeClass('sn-' + key, 'done');
-        badge('sb-' + key, 'paid ✓', 'paid');
-        document.getElementById('snd-' + key).textContent = '✓ Data received';
-        updateBreakdown(d.service, d.data);
-      }
-      log(`Got data from ${label}`, 'ok');
-    });
+    function scrollToHunt() {
+      document.getElementById('hunt').scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => document.getElementById('hunt-topic').focus(), 400);
+    }
 
-    es.addEventListener('alpha', e => {
-      const alpha = JSON.parse(e.data);
-      renderAlpha(alpha);
-      nodeClass('fn-hunter', 'done');
-      badge('badge-hunter', 'done ✓', 'paid');
-      log(`Signal ready — ${alpha.confidence} confidence`, 'ok');
-    });
+    // ─── Load services status + status strip ──────────────────────────────────
 
-    es.addEventListener('error', e => {
+    const POLL_INTERVAL = 10_000;
+    let lastHealthData = null;
+
+    function latencyClass(ms) {
+      if (ms < 100) return 'fast';
+      if (ms < 500) return 'medium';
+      return 'slow';
+    }
+
+    function statusIcon(status) {
+      return status === 'ok' ? '&#10003;' : '&#10007;';
+    }
+
+    function updateStatusStrip(data) {
+      const indicator = document.getElementById('strip-indicator');
+      const label = document.getElementById('strip-label');
+      const dots = document.getElementById('strip-dots');
+      const latency = document.getElementById('strip-latency');
+      const checked = document.getElementById('strip-checked');
+
+      // Overall status
+      const cls = data.ok ? 'ok' : data.onlineCount > 0 ? 'degraded' : 'offline';
+      const labelText = data.ok ? 'ALL OPERATIONAL' : data.onlineCount > 0 ? `DEGRADED (${data.onlineCount}/${data.totalCount})` : 'OFFLINE';
+
+      indicator.className = `status-indicator ${cls}`;
+      label.className = `status-label ${cls}`;
+      label.textContent = labelText;
+      latency.textContent = `avg ${data.avgLatencyMs}ms`;
+      checked.textContent = `updated ${new Date(data.checkedAt).toLocaleTimeString('en', {hour12: false})}`;
+
+      // Service dots
+      dots.innerHTML = data.services.map(s => {
+        const dotCls = s.status === 'ok' ? 'ok' : s.status === 'error' ? 'error' : 'offline';
+        const name = s.name.replace('alphaclaw-', '').replace('-alpha-scanner', '');
+        return `
+          <div class="status-dot ${dotCls}" title="${s.name}">
+            <span>${statusIcon(s.status)}</span>
+            <div class="tooltip">
+              <strong>${s.name}</strong><br/>
+              Port ${s.port} &middot; ${s.latencyMs}ms<br/>
+              ${s.price ? s.price + ' USDC' : 'coordinator'}<br/>
+              Status: <span style="color:var(${s.status === 'ok' ? '--green' : '--red'})">${s.status.toUpperCase()}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function updateServicesGrid(data) {
+      const grid = document.getElementById('services-grid');
+      grid.innerHTML = data.services.map(s => {
+        const statusCls = s.status === 'ok' ? 'ok' : s.status === 'error' ? 'err' : 'off';
+        const latCls = latencyClass(s.latencyMs);
+        const name = s.name.replace('alphaclaw-', '');
+        return `
+          <div class="service-card svc-${statusCls}">
+            <div class="service-status status-${statusCls}"></div>
+            <div class="service-info">
+              <div class="service-name">${name}</div>
+              <div class="service-details">
+                <span class="service-price">${s.price || 'coordinator'}</span>
+                <span class="service-latency ${latCls}">${s.latencyMs}ms</span>
+                <span class="service-port">:${s.port}</span>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    async function loadServices() {
       try {
+        const r = await fetch('/health-all');
+        const d = await r.json();
+        lastHealthData = d;
+
+        updateStatusStrip(d);
+        updateServicesGrid(d);
+
+        document.getElementById('stat-services').textContent = d.onlineCount;
+
+        // Update nav badge
+        const navBadge = document.querySelector('.nav-right .badge-green');
+        if (navBadge) {
+          if (d.ok) {
+            navBadge.className = 'badge badge-green';
+            navBadge.innerHTML = '<span class="dot"></span> LIVE';
+          } else if (d.onlineCount > 0) {
+            navBadge.className = 'badge badge-yellow';
+            navBadge.innerHTML = '<span class="dot"></span> DEGRADED';
+          } else {
+            navBadge.className = 'badge badge-red';
+            navBadge.innerHTML = '<span class="dot"></span> OFFLINE';
+          }
+        }
+      } catch(e) {
+        // Total failure — can't reach coordinator
+        const indicator = document.getElementById('strip-indicator');
+        const label = document.getElementById('strip-label');
+        indicator.className = 'status-indicator offline';
+        label.className = 'status-label offline';
+        label.textContent = 'UNREACHABLE';
+        document.getElementById('strip-dots').innerHTML = '';
+        document.getElementById('strip-latency').textContent = '--';
+        document.getElementById('strip-checked').textContent = 'failed';
+
+        document.getElementById('services-grid').innerHTML =
+          '<div style="color:var(--red);font-size:.8rem;padding:1rem;text-align:center;grid-column:1/-1">Failed to reach coordinator</div>';
+      }
+    }
+
+    // ─── Load reports ─────────────────────────────────────────────────────────
+
+    async function loadReports() {
+      try {
+        const r = await fetch('/reports');
+        const d = await r.json();
+        document.getElementById('stat-reports').textContent = d.count;
+        const grid = document.getElementById('reports-grid');
+        if (!d.reports.length) {
+          grid.innerHTML = '<div style="color:var(--text3);font-size:.85rem;grid-column:1/-1;padding:2rem;text-align:center;">No reports yet — run a hunt to generate one</div>';
+          return;
+        }
+        grid.innerHTML = d.reports.map(rep => `
+          <div class="report-card" onclick="openReport('${rep.id}')">
+            <div class="report-meta">
+              <span class="report-id">#${rep.id}</span>
+              <span class="report-price">${rep.price}</span>
+            </div>
+            <div class="report-topic">${rep.topic}</div>
+            <div class="report-preview">${rep.preview}</div>
+            <div class="report-footer">
+              <span class="report-time">${timeAgo(rep.timestamp)}</span>
+              <span class="badge badge-purple" style="font-size:.68rem;">Buy via x402</span>
+            </div>
+          </div>
+        `).join('');
+      } catch(e) {}
+    }
+
+    // ─── Hunt (SSE stream) ────────────────────────────────────────────────────
+
+    function addLog(cls, icon, msg) {
+      const log = document.getElementById('stream-log');
+      const time = new Date().toLocaleTimeString('en', {hour12:false});
+      const line = document.createElement('div');
+      line.className = `log-line log-${cls}`;
+      line.innerHTML = `<span class="log-time">${time}</span><span>${icon} ${msg}</span>`;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function runHunt() {
+      const topic = document.getElementById('hunt-topic').value.trim();
+      if (!topic) { document.getElementById('hunt-topic').focus(); return; }
+
+      const btn = document.getElementById('hunt-btn');
+      btn.disabled = true;
+      btn.textContent = 'Hunting…';
+
+      const output = document.getElementById('stream-output');
+      const log = document.getElementById('stream-log');
+      const result = document.getElementById('alpha-result');
+      output.style.display = 'block';
+      result.style.display = 'none';
+      log.innerHTML = '';
+
+      addLog('ok', '🚀', `Starting hunt: "${topic}"`);
+
+      const sse = new EventSource(`/stream?topic=${encodeURIComponent(topic)}`);
+
+      sse.addEventListener('start', e => {
         const d = JSON.parse(e.data);
-        log('Server error: ' + d.message, 'err');
-      } catch {}
+        addLog('ok', '⚡', `Coordinator online · ${d.services} agents ready`);
+      });
+
+      sse.addEventListener('paying', e => {
+        const d = JSON.parse(e.data);
+        addLog('pay', '💳', `Paying ${d.service} … ${d.amount} USDC`);
+      });
+
+      sse.addEventListener('result', e => {
+        const d = JSON.parse(e.data);
+        const tx = d.txHash ? ` · tx: ${shortHash(d.txHash)}` : (d.paid ? '' : ' (demo)');
+        addLog('ok', '✅', `${d.service} responded${tx}`);
+        if (d.paid && d.txHash) {
+          addTx({ service: d.service, txHash: d.txHash, paid: true });
+        }
+      });
+
+      sse.addEventListener('alpha', e => {
+        const d = JSON.parse(e.data);
+        addLog('alpha', '🎯', `Alpha synthesis complete · ${d.confidence} confidence`);
+        showAlpha(d);
+      });
+
+      sse.addEventListener('cached', e => {
+        const d = JSON.parse(e.data);
+        addLog('ok', '📦', `Report cached: ${d.reportId} · available at ${d.url} for ${d.sellPrice}`);
+        setTimeout(loadReports, 500);
+      });
+
+      sse.addEventListener('error', e => {
+        try { const d = JSON.parse(e.data); addLog('err', '❌', d.message); } catch {}
+      });
+
+      sse.addEventListener('done', () => {
+        sse.close();
+        btn.disabled = false;
+        btn.textContent = 'Hunt →';
+        addLog('ok', '🏁', 'Hunt complete');
+      });
+
+      sse.onerror = () => {
+        sse.close();
+        btn.disabled = false;
+        btn.textContent = 'Hunt →';
+      };
+    }
+
+    function showAlpha(d) {
+      const result = document.getElementById('alpha-result');
+      const rec = document.getElementById('alpha-rec');
+      const conf = document.getElementById('alpha-conf');
+      const signals = document.getElementById('alpha-signals');
+
+      rec.textContent = d.recommendation;
+      conf.textContent = `Confidence: ${d.confidence}`;
+
+      const colors = {
+        'strongly_bullish': '#10b981',
+        'bullish': '#34d399',
+        'HIGH_ALPHA': '#a855f7',
+        'MEDIUM_ALPHA': '#f59e0b',
+        'ACCUMULATION': '#06b6d4',
+      };
+
+      signals.innerHTML = (d.signals || []).map(s => {
+        const col = Object.entries(colors).find(([k]) => s.includes(k));
+        return `<span class="signal-tag" style="${col ? `border-color:${col[1]}40;color:${col[1]}` : ''}">${s}</span>`;
+      }).join('');
+
+      result.style.display = 'block';
+    }
+
+    // ─── Tx log ───────────────────────────────────────────────────────────────
+
+    function addTx(tx) {
+      txLog.unshift(tx);
+      if (txLog.length > 10) txLog.pop();
+      renderTxList();
+    }
+
+    function renderTxList() {
+      const list = document.getElementById('tx-list');
+      if (!txLog.length) {
+        list.innerHTML = '<div class="tx-empty">Transactions will appear here after a hunt</div>';
+        return;
+      }
+      list.innerHTML = txLog.map(tx => `
+        <div class="tx-item">
+          <span class="tx-dir">OUT</span>
+          <span class="tx-addr">${tx.service}</span>
+          <span class="tx-hash">${shortHash(tx.txHash)}</span>
+          <span class="tx-amount">USDC</span>
+        </div>
+      `).join('');
+    }
+
+    // ─── Report modal ─────────────────────────────────────────────────────────
+
+    async function openReport(id) {
+      document.getElementById('modal').classList.add('open');
+      const body = document.getElementById('modal-body');
+      body.innerHTML = '<div style="color:var(--text3);padding:2rem;text-align:center;">Loading…</div>';
+
+      try {
+        const r = await fetch(`/report/${id}`);
+        const d = await r.json();
+
+        if (r.status === 402) {
+          document.getElementById('modal-title').textContent = '🔒 Locked Report';
+          body.innerHTML = `
+            <div class="buy-cta">
+              <p>This report requires a payment of <strong>$0.01 USDC</strong> via x402 to unlock.</p>
+              <p style="font-size:.75rem;color:var(--text3);margin-bottom:1rem;font-family:var(--mono);">Report ID: ${id}</p>
+              <button class="btn btn-primary" onclick="copyEndpoint('${id}')">📋 Copy x402 Endpoint</button>
+            </div>`;
+          return;
+        }
+
+        document.getElementById('modal-title').textContent = `📊 ${d.topic}`;
+        const a = d.alpha || {};
+        const b = a.breakdown || {};
+
+        body.innerHTML = `
+          <div class="report-detail-section">
+            <div class="report-detail-label">Synthesis</div>
+            <div style="font-size:1rem;font-weight:600;margin-bottom:.5rem">${a.recommendation || '—'}</div>
+            <div style="font-size:.85rem;color:var(--text2)">Confidence: <strong style="color:var(--accent2)">${a.confidence || '—'}</strong></div>
+          </div>
+
+          <div class="report-detail-section">
+            <div class="report-detail-label">Signals</div>
+            <div class="alpha-signals" style="margin-top:.25rem">
+              ${(a.signals||[]).map(s=>`<span class="signal-tag">${s}</span>`).join('')||'<span style="color:var(--text3)">No signals</span>'}
+            </div>
+          </div>
+
+          ${b.news ? `
+          <div class="report-detail-section">
+            <div class="report-detail-label">📰 News</div>
+            <div class="breakdown-item"><span class="breakdown-key">Top headline</span><span class="breakdown-val">${b.news.topHeadline}</span></div>
+            <div class="breakdown-item"><span class="breakdown-key">Articles found</span><span class="breakdown-val">${b.news.articleCount}</span></div>
+          </div>` : ''}
+
+          ${b.sentiment ? `
+          <div class="report-detail-section">
+            <div class="report-detail-label">💬 Sentiment</div>
+            <div class="breakdown-item"><span class="breakdown-key">Label</span><span class="breakdown-val">${b.sentiment.label}</span></div>
+            <div class="breakdown-item"><span class="breakdown-key">Score</span><span class="breakdown-val">${b.sentiment.score}</span></div>
+            <div class="breakdown-item"><span class="breakdown-key">Confidence</span><span class="breakdown-val">${b.sentiment.confidence}</span></div>
+          </div>` : ''}
+
+          ${b.polymarket ? `
+          <div class="report-detail-section">
+            <div class="report-detail-label">🎲 Polymarket</div>
+            <div class="breakdown-item"><span class="breakdown-key">Market</span><span class="breakdown-val">${b.polymarket.market}</span></div>
+            <div class="breakdown-item"><span class="breakdown-key">Signal</span><span class="breakdown-val">${b.polymarket.signal}</span></div>
+            <div class="breakdown-item"><span class="breakdown-key">YES price</span><span class="breakdown-val">${b.polymarket.yesPrice}</span></div>
+          </div>` : ''}
+
+          ${b.whale ? `
+          <div class="report-detail-section">
+            <div class="report-detail-label">🐳 Whale Activity</div>
+            <div class="breakdown-item"><span class="breakdown-key">Signal</span><span class="breakdown-val">${b.whale.signal}</span></div>
+            <div class="breakdown-item"><span class="breakdown-key">Whale count</span><span class="breakdown-val">${b.whale.whaleCount}</span></div>
+            <div class="breakdown-item"><span class="breakdown-key">Total volume</span><span class="breakdown-val">${b.whale.totalVolume}</span></div>
+          </div>` : ''}
+
+          ${b.defi ? `
+          <div class="report-detail-section">
+            <div class="report-detail-label">🏦 DeFi</div>
+            <div class="breakdown-item"><span class="breakdown-key">Asset</span><span class="breakdown-val">${b.defi.asset}</span></div>
+            <div class="breakdown-item"><span class="breakdown-key">Action</span><span class="breakdown-val">${b.defi.action}</span></div>
+            <div class="breakdown-item"><span class="breakdown-key">24h change</span><span class="breakdown-val">${b.defi.change24h}</span></div>
+          </div>` : ''}
+
+          <div class="report-detail-section">
+            <div class="report-detail-label">💸 Agent Payments</div>
+            ${(d.agentPayments?.breakdown||[]).map(p=>`
+              <div class="breakdown-item">
+                <span class="breakdown-key">${p.service}</span>
+                <span class="breakdown-val" style="color:${p.paid?'var(--green)':'var(--text3)'}">
+                  ${p.paid?'✅':'⚠️'} ${p.price}${p.txHash?` · ${shortHash(p.txHash)}`:''}
+                </span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div style="font-size:.72rem;color:var(--text3);font-family:var(--mono);padding-top:.75rem;border-top:1px solid var(--border)">
+            Report ID: ${d.reportId} · ${d.timestamp}
+          </div>
+        `;
+      } catch(e) {
+        body.innerHTML = `<div style="color:var(--red)">Failed to load report</div>`;
+      }
+    }
+
+    function copyEndpoint(id) {
+      navigator.clipboard.writeText(`${location.origin}/report/${id}`);
+      alert('Endpoint copied! Send $0.01 USDC via x402 to unlock.');
+    }
+
+    function closeModal(e) {
+      if (!e || e.target === document.getElementById('modal')) {
+        document.getElementById('modal').classList.remove('open');
+      }
+    }
+
+    function shortHash(h) { return h ? h.slice(0,10)+'…' : '—'; }
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+
+    function restartCountdown() {
+      const el = document.getElementById('strip-countdown');
+      el.style.animation = 'none';
+      void el.offsetHeight; // trigger reflow
+      el.style.animation = `spin ${POLL_INTERVAL / 1000}s linear infinite`;
+    }
+
+    async function pollStatus() {
+      await Promise.all([loadServices(), loadReports()]);
+      restartCountdown();
+    }
+
+    async function init() {
+      await pollStatus();
+      setInterval(pollStatus, POLL_INTERVAL);
+    }
+
+    document.getElementById('hunt-topic').addEventListener('keydown', e => {
+      if (e.key === 'Enter') runHunt();
     });
 
-    es.addEventListener('done', () => {
-      clearTimeout(guard);
-      finish(true);
-    });
-
-    es.onerror = () => {
-      clearTimeout(guard);
-      finish(finished, new Error('Connection lost — is the hunter service running?'));
-    };
-  });
-}
-
-/* ── Init ──────────────────────────────────────────────── */
-checkHealth();
-setInterval(checkHealth, 8000);
-log('Dashboard ready — enter a topic and click Hunt Alpha', 'ok');
-</script>
+    init();
+  </script>
 </body>
 </html>

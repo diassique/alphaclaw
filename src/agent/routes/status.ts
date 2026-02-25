@@ -33,31 +33,47 @@ export function registerStatusRoutes(app: Application): void {
     interface ServiceProbeResult {
       name: string;
       url: string;
+      port: number;
       status: "ok" | "error" | "offline";
+      latencyMs: number;
       price?: string;
     }
 
-    async function probe(name: string, url: string, price?: string): Promise<ServiceProbeResult> {
+    async function probe(name: string, url: string, port: number, price?: string): Promise<ServiceProbeResult> {
+      const start = performance.now();
       try {
         const r = await fetch(url, { signal: AbortSignal.timeout(2500) });
+        const latencyMs = Math.round(performance.now() - start);
         const body = await r.json().catch(() => ({})) as { price?: string };
-        return { name, url, status: r.ok ? "ok" : "error", price: price ?? body.price };
+        return { name, url, port, status: r.ok ? "ok" : "error", latencyMs, price: price ?? body.price };
       } catch {
-        return { name, url, status: "offline", price };
+        const latencyMs = Math.round(performance.now() - start);
+        return { name, url, port, status: "offline", latencyMs, price };
       }
     }
 
     const port = config.ports.agent;
     const results = await Promise.all([
-      probe("alphaclaw-coordinator",      `http://localhost:${port}/health`),
-      probe("news-agent",                 `${serviceUrl("news")}/health`,        SERVICE_DEFS["news"]!.price),
-      probe("crypto-sentiment",           `${serviceUrl("sentiment")}/health`,   SERVICE_DEFS["sentiment"]!.price),
-      probe("polymarket-alpha-scanner",   `${serviceUrl("polymarket")}/health`,  SERVICE_DEFS["polymarket"]!.price),
-      probe("defi-alpha-scanner",         `${serviceUrl("defi")}/health`,        SERVICE_DEFS["defi"]!.price),
-      probe("whale-agent",                `${serviceUrl("whale")}/health`,       SERVICE_DEFS["whale"]!.price),
+      probe("alphaclaw-coordinator",      `http://localhost:${port}/health`,              port),
+      probe("news-agent",                 `${serviceUrl("news")}/health`,        config.ports.news,        SERVICE_DEFS["news"]!.price),
+      probe("crypto-sentiment",           `${serviceUrl("sentiment")}/health`,   config.ports.sentiment,   SERVICE_DEFS["sentiment"]!.price),
+      probe("polymarket-alpha-scanner",   `${serviceUrl("polymarket")}/health`,  config.ports.polymarket,  SERVICE_DEFS["polymarket"]!.price),
+      probe("defi-alpha-scanner",         `${serviceUrl("defi")}/health`,        config.ports.defi,        SERVICE_DEFS["defi"]!.price),
+      probe("whale-agent",                `${serviceUrl("whale")}/health`,       config.ports.whale,       SERVICE_DEFS["whale"]!.price),
     ]);
 
-    const all = results.every(r => r.status === "ok");
-    res.json({ ok: all, services: results, marketplaceStatus: all ? "FULLY OPERATIONAL" : "DEGRADED" });
+    const onlineCount = results.filter(r => r.status === "ok").length;
+    const totalCount = results.length;
+    const avgLatency = Math.round(results.reduce((s, r) => s + r.latencyMs, 0) / totalCount);
+
+    res.json({
+      ok: onlineCount === totalCount,
+      onlineCount,
+      totalCount,
+      avgLatencyMs: avgLatency,
+      services: results,
+      marketplaceStatus: onlineCount === totalCount ? "FULLY OPERATIONAL" : onlineCount > 0 ? "DEGRADED" : "OFFLINE",
+      checkedAt: new Date().toISOString(),
+    });
   });
 }
