@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlphaClaw — AI Trading Signal Network</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens ─────────────────────────────────────────────── */
+:root {
+  --bg:      #09090b;
+  --bg2:     #0f0f12;
+  --bg3:     #18181b;
+  --border:  #27272a;
+  --border2: #3f3f46;
+  --text:    #fafafa;
+  --dim:     #71717a;
+  --muted:   #52525b;
+
+  --purple:  #8b5cf6;
+  --purple2: #7c3aed;
+  --purple3: #a78bfa;
+  --green:   #22c55e;
+  --yellow:  #eab308;
+  --red:     #ef4444;
+  --blue:    #3b82f6;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+}
+
+/* ── Reset ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+header {
+  background: rgba(9,9,11,.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(39,39,42,.9);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.logo { display: flex; align-items: center; gap: 10px; }
+
+.logo-text {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: var(--text);
+  text-shadow: 0 0 20px rgba(139,92,246,.35);
+}
+
+.logo-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: .06em;
+  color: var(--purple3);
+  background: rgba(139,92,246,.1);
+  border: 1px solid rgba(139,92,246,.25);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* Service health dots in header */
+.health-bar { display: flex; gap: 14px; }
+.hdot {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: .03em;
+  cursor: default;
+  position: relative;
+}
+.hdot:hover .tooltip { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+.dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background .4s, box-shadow .4s;
+}
+.dot.on  { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,.6); }
+.dot.off { background: var(--red); }
+
+.tooltip {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(4px);
+  margin-top: 6px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 5px 8px;
+  font-size: 10px; color: var(--text); white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: opacity .15s, transform .15s;
+  z-index: 100;
+}
+
+/* ── Layout ──────────────────────────────────────────────── */
+main { padding: 16px 24px 40px; max-width: 1100px; margin: 0 auto; }
+
+/* ── How it works ────────────────────────────────────────── */
+.how-it-works {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.hiw-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+.hiw-step:last-child { border-right: none; }
+
+.hiw-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--purple3);
+  background: rgba(139,92,246,.12);
+  border: 1px solid rgba(139,92,246,.2);
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.hiw-content strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1px;
+}
+.hiw-content span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.hiw-arrow {
+  font-size: 14px;
+  color: var(--border2);
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+/* ── Search bar ──────────────────────────────────────────── */
+.search-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.search-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.search-label {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .05em;
+  pointer-events: none;
+  user-select: none;
+}
+
+.search-row input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px 10px 80px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.search-row input::placeholder { color: var(--muted); }
+.search-row input:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(139,92,246,.15);
+}
+
+.hunt-btn {
+  position: relative;
+  background: linear-gradient(135deg, var(--purple2) 0%, var(--purple) 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity .2s, transform .1s;
+}
+.hunt-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: 8px;
+  box-shadow: 0 0 0 0 rgba(139,92,246,.5);
+  transition: box-shadow .2s;
+}
+.hunt-btn:hover::after   { box-shadow: 0 0 20px 4px rgba(139,92,246,.25); }
+.hunt-btn:active         { transform: scale(.97); }
+.hunt-btn:disabled       { opacity: .35; cursor: not-allowed; }
+.hunt-btn:disabled::after{ box-shadow: none; }
+
+/* ── Two-column grid ─────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.card + .card { margin-top: 10px; }
+
+.card-title {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  margin-bottom: 4px;
+}
+.card-desc {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+/* ── Flow diagram ────────────────────────────────────────── */
+.flow-node {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0;
+  opacity: .3;
+  transition: opacity .4s;
+}
+.flow-node.always-lit { opacity: 1; }
+.flow-node.lit  { opacity: 1; }
+
+.ficon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+  transition: border-color .35s, box-shadow .35s;
+}
+.flow-node.lit  .ficon {
+  border-color: var(--purple);
+  box-shadow: 0 0 12px rgba(139,92,246,.3);
+  animation: pulse-purple 1.6s infinite;
+}
+.flow-node.done .ficon {
+  border-color: var(--green);
+  box-shadow: 0 0 8px rgba(34,197,94,.25);
+  animation: none;
+}
+
+.fname   { font-size: 12px; font-weight: 600; flex: 1; color: var(--text); }
+.fdesc   { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.fdetail { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 1px; letter-spacing: .02em; }
+
+/* Badges */
+.badge {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: var(--bg3);
+  color: var(--muted);
+  transition: background .3s, color .3s, border-color .3s;
+}
+.badge.paying { background: rgba(234,179,8,.08);  color: var(--yellow); border-color: rgba(234,179,8,.2); }
+.badge.paid   { background: rgba(34,197,94,.08);  color: var(--green);  border-color: rgba(34,197,94,.2); }
+.badge.err    { background: rgba(239,68,68,.08);  color: var(--red);    border-color: rgba(239,68,68,.2); }
+
+/* Connector line */
+.vline {
+  width: 1px; height: 12px;
+  background: var(--border);
+  margin: 0 0 0 15px;
+  transition: background .35s;
+}
+.vline.lit { background: var(--purple); box-shadow: 0 0 6px rgba(139,92,246,.4); }
+
+/* Sub-nodes */
+.sub-nodes { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
+
+.sub-node {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  opacity: .3;
+  transition: opacity .4s, border-color .35s, box-shadow .35s;
+}
+.sub-node.lit  {
+  opacity: 1;
+  border-color: rgba(139,92,246,.5);
+  box-shadow: 0 0 8px rgba(139,92,246,.1);
+}
+.sub-node.done {
+  opacity: 1;
+  border-color: rgba(34,197,94,.4);
+  box-shadow: 0 0 6px rgba(34,197,94,.08);
+}
+
+.sub-icon { font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+.sub-info  { flex: 1; min-width: 0; }
+.sub-name   { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; }
+.sub-desc   { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.sub-detail { font-family: var(--font-mono); font-size: 9.5px; color: var(--muted); margin-top: 2px; }
+.sub-right  { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.sub-amt    { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--yellow); }
+
+/* ── Alpha panel ─────────────────────────────────────────── */
+.idle-msg {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px;
+  padding: 20px 10px;
+  color: var(--muted); font-size: 12px; text-align: center;
+}
+.idle-icon { font-size: 32px; }
+.idle-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.idle-hint  { font-size: 11px; line-height: 1.6; }
+.idle-examples {
+  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+  margin-top: 4px;
+}
+.idle-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--purple3);
+  background: rgba(139,92,246,.08);
+  border: 1px solid rgba(139,92,246,.2);
+  border-radius: 20px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.idle-chip:hover { background: rgba(139,92,246,.15); }
+
+/* Recommendation box */
+.recommendation {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  text-align: center;
+  transition: color .4s, border-color .4s, background .4s;
+  margin-bottom: 14px;
+}
+.rec-strong { color: var(--green);   border-color: rgba(34,197,94,.3);  background: rgba(34,197,94,.05); }
+.rec-mod    { color: var(--purple3); border-color: rgba(139,92,246,.3); background: rgba(139,92,246,.05); }
+.rec-watch  { color: var(--yellow);  border-color: rgba(234,179,8,.25); }
+.rec-wait   { color: var(--muted); }
+
+/* Confidence section */
+.conf-section { margin-bottom: 14px; }
+.conf-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 6px;
+}
+.conf-label { font-size: 11px; color: var(--muted); }
+.conf-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--purple3);
+}
+.conf-text {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+.bar-track {
+  height: 4px;
+  background: var(--bg3);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple2), var(--purple3));
+  border-radius: 99px;
+  width: 0;
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 8px rgba(139,92,246,.5);
+}
+.bar-scale {
+  display: flex; justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+/* Evidence */
+.ev-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  margin-bottom: 7px;
+}
+.sig-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.sig-item {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--dim);
+  opacity: 0; transform: translateY(4px);
+  transition: opacity .3s, transform .3s;
+}
+.sig-item.show { opacity: 1; transform: none; }
+.sig-tick { color: var(--green); font-size: 10px; }
+
+/* Breakdown grid */
+.bd-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+.bd-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  opacity: .3;
+  transition: opacity .4s, border-color .35s;
+}
+.bd-card.show { opacity: 1; }
+.bd-svc {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom: 5px;
+}
+.bd-val { font-size: 12px; font-weight: 600; line-height: 1.3; }
+.bd-sub { font-family: var(--font-mono); font-size: 9.5px; color: var(--muted); margin-top: 4px; word-break: break-word; }
+
+/* Ledger */
+.ledger { padding: 12px 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; }
+.led-title {
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase; letter-spacing: .12em;
+  margin-bottom: 10px;
+}
+.led-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; margin-top: 5px; color: var(--dim);
+}
+.led-row span:last-child { font-family: var(--font-mono); font-size: 11px; }
+.led-sep { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; }
+
+/* Activity log */
+.log {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  max-height: 110px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.le         { padding: 1.5px 0; line-height: 1.6; }
+.le .ts     { color: var(--border2); }
+.le .ok     { color: var(--green); }
+.le .pay    { color: var(--yellow); }
+.le .err    { color: var(--red); }
+.le .info   { color: var(--purple3); }
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin {
+  display: inline-block; width: 12px; height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes pulse-purple {
+  0%   { box-shadow: 0 0 0 0 rgba(139,92,246,.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(139,92,246,0); }
+  100% { box-shadow: 0 0 0 0 rgba(139,92,246,0); }
+}
+
+@media (max-width: 720px) {
+  .grid { grid-template-columns: 1fr; }
+  .health-bar { display: none; }
+  .bd-grid { grid-template-columns: 1fr; }
+  .how-it-works { flex-direction: column; }
+  .hiw-step { border-right: none; border-bottom: 1px solid var(--border); }
+  .hiw-step:last-child { border-bottom: none; }
+  .hiw-arrow { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span style="font-size:20px">⚡</span>
+    <div>
+      <div class="logo-text">ALPHACLAW</div>
+    </div>
+    <div class="logo-badge">AI Signal Network</div>
+  </div>
+  <div class="health-bar" id="healthBar">
+    <div class="hdot">
+      <span class="dot" id="dot-sentiment"></span>
+      Mood AI
+      <div class="tooltip">Sentiment Analysis — reads market mood from text</div>
+    </div>
+    <div class="hdot">
+      <span class="dot" id="dot-polymarket"></span>
+      Markets
+      <div class="tooltip">Prediction Markets — scans Polymarket for signals</div>
+    </div>
+    <div class="hdot">
+      <span class="dot" id="dot-defi"></span>
+      DeFi
+      <div class="tooltip">DeFi Trends — tracks token momentum on-chain</div>
+    </div>
+    <div class="hdot">
+      <span class="dot" id="dot-hunter"></span>
+      Hunter
+      <div class="tooltip">AlphaClaw Hunter — the main AI orchestrator agent</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- How it works -->
+  <div class="how-it-works">
+    <div class="hiw-step">
+      <div class="hiw-num">1</div>
+      <div class="hiw-content">
+        <strong>You enter a topic</strong>
+        <span>Type a coin, trend, or question</span>
+      </div>
+    </div>
+    <div class="hiw-arrow">›</div>
+    <div class="hiw-step">
+      <div class="hiw-num">2</div>
+      <div class="hiw-content">
+        <strong>AI agent pays for data</strong>
+        <span>Buys signals from 3 sources using crypto micropayments</span>
+      </div>
+    </div>
+    <div class="hiw-arrow">›</div>
+    <div class="hiw-step">
+      <div class="hiw-num">3</div>
+      <div class="hiw-content">
+        <strong>Get your trading signal</strong>
+        <span>Receive a synthesized buy/watch/wait recommendation</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-row">
+    <div class="search-wrap">
+      <span class="search-label">TOPIC</span>
+      <input id="topicInput" type="text"
+             placeholder="e.g. ethereum, solana, DeFi summer, bitcoin rally..."
+             value="ethereum DeFi bullish breakout" />
+    </div>
+    <button class="hunt-btn" id="huntBtn" onclick="startHunt()">⚡ Hunt Alpha</button>
+  </div>
+
+  <div class="grid">
+
+    <!-- Left: Payment flow -->
+    <div>
+      <div class="card">
+        <div class="card-title">Live Payment Flow</div>
+        <div class="card-desc">Watch the AI agent pay each data source in real time</div>
+
+        <!-- YOU -->
+        <div class="flow-node always-lit" id="fn-you">
+          <div class="ficon">👤</div>
+          <div style="flex:1">
+            <div class="fname">You</div>
+            <div class="fdesc">investor / trader</div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--yellow);font-weight:600">$0.05</div>
+        </div>
+
+        <div class="vline" id="vl-hunter"></div>
+
+        <!-- HUNTER -->
+        <div class="flow-node" id="fn-hunter">
+          <div class="ficon">🦅</div>
+          <div style="flex:1">
+            <div class="fname">AlphaClaw Hunter</div>
+            <div class="fdesc">your autonomous AI agent</div>
+          </div>
+          <div class="badge" id="badge-hunter">idle</div>
+        </div>
+
+        <div class="vline" id="vl-subs"></div>
+
+        <!-- SUB-SERVICES -->
+        <div class="sub-nodes">
+
+          <div class="sub-node" id="sn-sentiment">
+            <span class="sub-icon">🧠</span>
+            <div class="sub-info">
+              <div class="sub-name">Mood Analysis</div>
+              <div class="sub-desc">Reads bullish/bearish signals from news and text</div>
+              <div class="sub-detail" id="snd-sentiment">waiting...</div>
+            </div>
+            <div class="sub-right">
+              <span class="sub-amt">$0.01</span>
+              <span class="badge" id="sb-sentiment">—</span>
+            </div>
+          </div>
+
+          <div class="sub-node" id="sn-polymarket">
+            <span class="sub-icon">📊</span>
+            <div class="sub-info">
+              <div class="sub-name">Prediction Markets</div>
+              <div class="sub-desc">Checks crowd wisdom on Polymarket odds</div>
+              <div class="sub-detail" id="snd-polymarket">waiting...</div>
+            </div>
+            <div class="sub-right">
+              <span class="sub-amt">$0.02</span>
+              <span class="badge" id="sb-polymarket">—</span>
+            </div>
+          </div>
+
+          <div class="sub-node" id="sn-defi">
+            <span class="sub-icon">💎</span>
+            <div class="sub-info">
+              <div class="sub-name">DeFi Trends</div>
+              <div class="sub-desc">Scans top tokens for momentum and volume spikes</div>
+              <div class="sub-detail" id="snd-defi">waiting...</div>
+            </div>
+            <div class="sub-right">
+              <span class="sub-amt">$0.015</span>
+              <span class="badge" id="sb-defi">—</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Activity log -->
+      <div class="card">
+        <div class="card-title">Activity Log</div>
+        <div class="log" id="logEl"></div>
+      </div>
+    </div>
+
+    <!-- Right: Results -->
+    <div>
+      <!-- Alpha signal -->
+      <div class="card">
+        <div class="card-title">Trading Signal</div>
+        <div class="card-desc">AI-synthesized recommendation based on all 3 data sources</div>
+        <div id="alphaPanel">
+          <div class="idle-msg">
+            <div class="idle-icon">🎯</div>
+            <div class="idle-title">Ready to hunt alpha</div>
+            <div class="idle-hint">
+              "Alpha" = a trading opportunity where you have an <strong>informational edge</strong> over the market.<br>
+              The AI agent buys data from 3 independent sources, then synthesizes a signal.
+            </div>
+            <div class="idle-examples">
+              <span class="idle-chip" onclick="setTopic('ethereum')">ethereum</span>
+              <span class="idle-chip" onclick="setTopic('solana breakout')">solana breakout</span>
+              <span class="idle-chip" onclick="setTopic('DeFi summer')">DeFi summer</span>
+              <span class="idle-chip" onclick="setTopic('bitcoin halving')">bitcoin halving</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Breakdown by source -->
+      <div class="card">
+        <div class="card-title">Signal Breakdown by Source</div>
+        <div class="card-desc">What each data service contributed to the final signal</div>
+        <div class="bd-grid">
+          <div class="bd-card" id="bd-sentiment">
+            <div class="bd-svc">🧠 Mood Analysis</div>
+            <div class="bd-val" style="color:var(--muted)">—</div>
+            <div class="bd-sub">awaiting hunt...</div>
+          </div>
+          <div class="bd-card" id="bd-polymarket">
+            <div class="bd-svc">📊 Prediction Markets</div>
+            <div class="bd-val" style="color:var(--muted)">—</div>
+            <div class="bd-sub">awaiting hunt...</div>
+          </div>
+          <div class="bd-card" id="bd-defi">
+            <div class="bd-svc">💎 DeFi Trends</div>
+            <div class="bd-val" style="color:var(--muted)">—</div>
+            <div class="bd-sub">awaiting hunt...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+/* ── Helpers ─────────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setTopic(t) {
+  document.getElementById('topicInput').value = t;
+}
+
+/* ── Log ─────────────────────────────────────────────── */
+function log(msg, type) {
+  const el = document.getElementById('logEl');
+  const ts = new Date().toLocaleTimeString();
+  const d = document.createElement('div');
+  d.className = 'le';
+  d.innerHTML = `<span class="ts">[${ts}]</span> <span class="${type || ''}">${msg}</span>`;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+/* ── Health check ─────────────────────────────────────── */
+async function checkHealth() {
+  try {
+    const r = await fetch('/health-all', { signal: AbortSignal.timeout(5000) });
+    const data = await r.json();
+    const nameMap = {
+      'alphaclaw-hunter':         'hunter',
+      'crypto-sentiment':         'sentiment',
+      'polymarket-alpha-scanner': 'polymarket',
+      'defi-alpha-scanner':       'defi',
+    };
+    for (const svc of (data.services || [])) {
+      const key = nameMap[svc.name];
+      const dot = document.getElementById('dot-' + key);
+      if (dot) dot.className = 'dot ' + (svc.status === 'ok' ? 'on' : 'off');
+    }
+  } catch {
+    ['hunter','sentiment','polymarket','defi'].forEach(k => {
+      const dot = document.getElementById('dot-' + k);
+      if (dot) dot.className = 'dot off';
+    });
+  }
+}
+
+/* ── Flow state helpers ───────────────────────────────── */
+function nodeClass(id, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('lit', 'done');
+  if (cls) el.classList.add(cls);
+}
+
+function badge(id, text, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'badge ' + (cls || '');
+}
+
+/* ── Reset flow ─────────────────────────────────────────── */
+function resetFlow() {
+  nodeClass('fn-hunter', '');
+  ['sentiment', 'polymarket', 'defi'].forEach(s => {
+    nodeClass('sn-' + s, '');
+    badge('sb-' + s, '—', '');
+    document.getElementById('snd-' + s).textContent = 'waiting...';
+    const bd = document.getElementById('bd-' + s);
+    bd.classList.remove('show');
+    bd.querySelector('.bd-val').textContent = '—';
+    bd.querySelector('.bd-val').style.color = 'var(--muted)';
+    bd.querySelector('.bd-sub').textContent = 'awaiting hunt...';
+  });
+  badge('badge-hunter', 'idle', '');
+  document.getElementById('vl-hunter').classList.remove('lit');
+  document.getElementById('vl-subs').classList.remove('lit');
+}
+
+/* ── Service name → dashboard key ────────────────────── */
+const SVC_KEY = {
+  'crypto-sentiment':         'sentiment',
+  'polymarket-alpha-scanner': 'polymarket',
+  'defi-alpha-scanner':       'defi',
+};
+
+const SVC_LABEL = {
+  'crypto-sentiment':         'Mood Analysis',
+  'polymarket-alpha-scanner': 'Prediction Markets',
+  'defi-alpha-scanner':       'DeFi Trends',
+};
+
+/* ── Breakdown update ─────────────────────────────────── */
+function updateBreakdown(svc, data) {
+  const key = SVC_KEY[svc];
+  if (!key || !data) return;
+  const card = document.getElementById('bd-' + key);
+  let val = '—', sub = '', color = 'var(--muted)';
+
+  if (key === 'sentiment' && data.result) {
+    const r = data.result;
+    const labelNice = r.label.replace(/_/g, ' ');
+    val = labelNice.toUpperCase();
+    sub = `score ${r.score} · ${r.confidence} confidence · ${r.wordCount} words analyzed`;
+    color = r.label.includes('bull') ? 'var(--green)' : r.label.includes('bear') ? 'var(--red)' : 'var(--dim)';
+  } else if (key === 'polymarket' && data.result) {
+    const top = data.result.opportunities?.[0];
+    val = top ? top.alphaSignal + ' signal' : 'no signal';
+    sub = top ? `yes @ ${top.yesPrice} · "${(top.question||'').slice(0,40)}…"` : data.result.summary || '';
+    color = top?.alphaSignal === 'HIGH' ? 'var(--green)' : top?.alphaSignal === 'MEDIUM' ? 'var(--yellow)' : 'var(--muted)';
+  } else if (key === 'defi' && data.result) {
+    const top = data.result.topOpportunity;
+    val = top ? `${top.symbol} is ${top.alphaLevel}` : 'no pick';
+    sub = top ? `${top.change24h > 0 ? '+' : ''}${top.change24h}% today · ${(top.suggestedAction||'').slice(0,40)}` : '';
+    color = top?.alphaLevel === 'HOT' ? 'var(--red)' : top?.alphaLevel === 'WARM' ? 'var(--yellow)' : 'var(--muted)';
+  }
+
+  card.querySelector('.bd-val').textContent = val;
+  card.querySelector('.bd-val').style.color = color;
+  card.querySelector('.bd-sub').textContent = sub;
+  card.classList.add('show');
+}
+
+/* ── Confidence label ─────────────────────────────────── */
+function confText(pct) {
+  if (pct >= 75) return 'Very Strong';
+  if (pct >= 50) return 'Moderate';
+  if (pct >= 30) return 'Weak';
+  return 'Insufficient';
+}
+
+/* ── Alpha render ─────────────────────────────────────── */
+function renderAlpha(alpha) {
+  const conf    = parseInt(alpha.confidence) || 0;
+  const recCls  = conf >= 75 ? 'rec-strong' : conf >= 50 ? 'rec-mod' : conf >= 30 ? 'rec-watch' : 'rec-wait';
+  const rec     = (alpha.recommendation || '').replace(/[🚀📈👀⏳]/g, '').trim();
+  const cText   = confText(conf);
+
+  const sigsHtml = (alpha.signals || []).map((s, i) => {
+    // Make signal labels human-readable
+    const nice = s
+      .replace('sentiment:', 'Mood: ')
+      .replace('polymarket:', 'Prediction market: ')
+      .replace('defi:', 'DeFi token: ')
+      .replace(/_/g, ' ');
+    return `<div class="sig-item" id="si-${i}"><span class="sig-tick">✓</span><span>${escHtml(nice)}</span></div>`;
+  }).join('');
+
+  document.getElementById('alphaPanel').innerHTML = `
+    <div class="recommendation ${recCls}">${escHtml(rec)}</div>
+
+    <div class="conf-section">
+      <div class="conf-header">
+        <span class="conf-label">Confidence score <span class="conf-text">— how many signals agree</span></span>
+        <span class="conf-value">${alpha.confidence} <span class="conf-text">${cText}</span></span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="confBar"></div></div>
+      <div class="bar-scale"><span>Weak</span><span>Moderate</span><span>Strong</span></div>
+    </div>
+
+    <div class="ev-label">Supporting evidence</div>
+    <div class="sig-list">${sigsHtml || '<div class="sig-item show"><span class="sig-tick" style="color:var(--muted)">—</span><span>No confirming signals</span></div>'}</div>
+
+    <div class="ledger">
+      <div class="led-title">💸 Transparent payment trail</div>
+      <div class="led-row"><span>You paid the Hunter</span><span style="color:var(--yellow)">$0.050 USDC</span></div>
+      <div class="led-row"><span>Hunter → Mood Analysis</span><span style="color:var(--yellow)">$0.010</span></div>
+      <div class="led-row"><span>Hunter → Prediction Markets</span><span style="color:var(--yellow)">$0.020</span></div>
+      <div class="led-row"><span>Hunter → DeFi Trends</span><span style="color:var(--yellow)">$0.015</span></div>
+      <div class="led-row led-sep"><span>Hunter keeps as margin</span><span style="color:var(--green)">$0.005</span></div>
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    const bar = document.getElementById('confBar');
+    if (bar) bar.style.width = Math.min(conf, 100) + '%';
+    (alpha.signals || []).forEach((_, i) => setTimeout(() => {
+      const el = document.getElementById('si-' + i);
+      if (el) el.classList.add('show');
+    }, i * 120));
+  });
+}
+
+/* ── Error / idle states ──────────────────────────────── */
+function resetToIdle(msg) {
+  document.getElementById('alphaPanel').innerHTML = `
+    <div class="idle-msg">
+      <div style="font-size:28px">⚠️</div>
+      <div class="idle-title" style="color:var(--red)">Hunt failed</div>
+      <div class="idle-hint" style="color:var(--red)">${escHtml(msg)}</div>
+      <div class="idle-hint">Make sure all services are running:<br><code style="font-family:var(--font-mono);color:var(--purple3)">npm start</code></div>
+    </div>`;
+}
+
+/* ── Hunt via SSE stream ──────────────────────────────── */
+let hunting = false;
+
+async function startHunt() {
+  if (hunting) return;
+  hunting = true;
+
+  const topic = document.getElementById('topicInput').value.trim() || 'ethereum DeFi bullish';
+  const btn   = document.getElementById('huntBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Hunting...';
+
+  resetFlow();
+  document.getElementById('alphaPanel').innerHTML = `
+    <div class="idle-msg">
+      <span class="spin" style="width:22px;height:22px;border-width:3px"></span>
+      <div class="idle-title">Agent is hunting...</div>
+      <div class="idle-hint">Paying for data from 3 sources, please wait</div>
+    </div>`;
+
+  log(`Starting hunt — topic: "${topic}"`, 'info');
+
+  try {
+    await streamHunt(topic);
+  } catch (err) {
+    log('Error: ' + err.message, 'err');
+    badge('badge-hunter', 'error', 'err');
+    resetToIdle(err.message);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '⚡ Hunt Alpha';
+  hunting = false;
+}
+
+function streamHunt(topic) {
+  return new Promise((resolve, reject) => {
+    const es = new EventSource('/stream?topic=' + encodeURIComponent(topic));
+    let finished = false;
+
+    function finish(ok, err) {
+      if (finished) return;
+      finished = true;
+      es.close();
+      if (ok) resolve(); else reject(err);
+    }
+
+    const guard = setTimeout(() => finish(false, new Error('Timed out after 28s — is the hunter running?')), 28000);
+
+    es.addEventListener('start', e => {
+      clearTimeout(guard);
+      const d = JSON.parse(e.data);
+      log(`Hunt started for: "${d.topic}"`, 'info');
+      nodeClass('fn-hunter', 'lit');
+      badge('badge-hunter', 'active', 'paying');
+      document.getElementById('vl-hunter').classList.add('lit');
+    });
+
+    es.addEventListener('paying', e => {
+      const d = JSON.parse(e.data);
+      const key = SVC_KEY[d.service];
+      const label = SVC_LABEL[d.service] || d.service;
+      if (key) {
+        nodeClass('sn-' + key, 'lit');
+        badge('sb-' + key, 'paying', 'paying');
+        document.getElementById('snd-' + key).textContent = 'Sending ' + d.amount + '…';
+        document.getElementById('vl-subs').classList.add('lit');
+      }
+      log(`Paying ${label} — ${d.amount} USDC`, 'pay');
+    });
+
+    es.addEventListener('result', e => {
+      const d = JSON.parse(e.data);
+      const key = SVC_KEY[d.service];
+      const label = SVC_LABEL[d.service] || d.service;
+      if (key) {
+        nodeClass('sn-' + key, 'done');
+        badge('sb-' + key, 'paid ✓', 'paid');
+        document.getElementById('snd-' + key).textContent = '✓ Data received';
+        updateBreakdown(d.service, d.data);
+      }
+      log(`Got data from ${label}`, 'ok');
+    });
+
+    es.addEventListener('alpha', e => {
+      const alpha = JSON.parse(e.data);
+      renderAlpha(alpha);
+      nodeClass('fn-hunter', 'done');
+      badge('badge-hunter', 'done ✓', 'paid');
+      log(`Signal ready — ${alpha.confidence} confidence`, 'ok');
+    });
+
+    es.addEventListener('error', e => {
+      try {
+        const d = JSON.parse(e.data);
+        log('Server error: ' + d.message, 'err');
+      } catch {}
+    });
+
+    es.addEventListener('done', () => {
+      clearTimeout(guard);
+      finish(true);
+    });
+
+    es.onerror = () => {
+      clearTimeout(guard);
+      finish(finished, new Error('Connection lost — is the hunter service running?'));
+    };
+  });
+}
+
+/* ── Init ──────────────────────────────────────────────── */
+checkHealth();
+setInterval(checkHealth, 8000);
+log('Dashboard ready — enter a topic and click Hunt Alpha', 'ok');
+</script>
+</body>
+</html>
