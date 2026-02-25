@@ -8,9 +8,12 @@
  */
 
 import express, { type Application } from "express";
+import compression from "compression";
+import helmet from "helmet";
 import { conditionalPaywall, type RouteConfig } from "./paywall.js";
 import { createLogger, type Logger } from "./logger.js";
 import { config } from "../config/env.js";
+import type { Server } from "http";
 
 export interface ServiceOpts {
   /** Logger / service name */
@@ -28,12 +31,20 @@ export interface ServiceOpts {
 export interface ServiceInstance {
   app: Application;
   log: Logger;
-  start: () => void;
+  start: () => Server;
 }
+
+const SHUTDOWN_TIMEOUT = 10_000; // 10s max for graceful shutdown
 
 export function createService(opts: ServiceOpts): ServiceInstance {
   const app = express();
-  app.use(express.json());
+
+  // Security headers
+  app.use(helmet({ contentSecurityPolicy: false }));
+  // Gzip/brotli compression
+  app.use(compression());
+  // JSON body with size limit
+  app.use(express.json({ limit: "10kb" }));
 
   const log = createLogger(opts.name);
 
@@ -55,10 +66,29 @@ export function createService(opts: ServiceOpts): ServiceInstance {
     });
   });
 
-  function start(): void {
-    app.listen(opts.port, () => {
+  function start(): Server {
+    const server = app.listen(opts.port, () => {
       log.info(`listening on http://localhost:${opts.port}`);
     });
+
+    // Graceful shutdown
+    const shutdown = (signal: string) => {
+      log.info(`${signal} received — shutting down gracefully`);
+      server.close(() => {
+        log.info("server closed");
+        process.exit(0);
+      });
+      // Force exit if graceful shutdown takes too long
+      setTimeout(() => {
+        log.warn("graceful shutdown timed out — forcing exit");
+        process.exit(1);
+      }, SHUTDOWN_TIMEOUT).unref();
+    };
+
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
+
+    return server;
   }
 
   return { app, log, start };

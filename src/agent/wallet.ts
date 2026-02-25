@@ -34,9 +34,18 @@ if (config.agentPrivateKey) {
 
 // ─── x402-aware fetch with timeout ──────────────────────────────────────────
 
-export async function x402Fetch(url: string, options: RequestInit = {}, timeoutMs = SUB_CALL_TIMEOUT): Promise<X402FetchResult> {
+export async function x402Fetch(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = SUB_CALL_TIMEOUT,
+  signal?: AbortSignal,
+): Promise<X402FetchResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  // If an external signal is provided, abort our controller when it fires
+  const onExternalAbort = () => controller.abort();
+  signal?.addEventListener("abort", onExternalAbort, { once: true });
 
   try {
     const res = await fetch(url, { ...options, signal: controller.signal });
@@ -67,28 +76,42 @@ export async function x402Fetch(url: string, options: RequestInit = {}, timeoutM
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const paymentHeader = await createPaymentHeader(walletClient as any, body.x402Version ?? 1, selected);
 
-    const paid = await fetch(url, {
-      ...options,
-      headers: {
-        ...(options.headers as Record<string, string>),
-        "X-PAYMENT": paymentHeader,
-        "Access-Control-Expose-Headers": "X-PAYMENT-RESPONSE",
-      },
-    });
+    // Second fetch with payment — also protected by AbortController + timeout
+    const payController = new AbortController();
+    const payTimer = setTimeout(() => payController.abort(), timeoutMs);
+    signal?.addEventListener("abort", () => payController.abort(), { once: true });
 
-    const paymentResponse = paid.headers.get("X-PAYMENT-RESPONSE");
-    let txHash: string | undefined;
     try {
-      if (paymentResponse) {
-        const pr = JSON.parse(paymentResponse) as { transaction?: string };
-        txHash = pr.transaction;
-      }
-    } catch { /* ignore */ }
+      const paid = await fetch(url, {
+        ...options,
+        signal: payController.signal,
+        headers: {
+          ...(options.headers as Record<string, string>),
+          "X-PAYMENT": paymentHeader,
+          "Access-Control-Expose-Headers": "X-PAYMENT-RESPONSE",
+        },
+      });
+      clearTimeout(payTimer);
 
-    const data = await paid.json().catch(() => null);
-    return { ok: paid.ok, status: paid.status, data, paid: true, txHash };
+      const paymentResponse = paid.headers.get("X-PAYMENT-RESPONSE");
+      let txHash: string | undefined;
+      try {
+        if (paymentResponse) {
+          const pr = JSON.parse(paymentResponse) as { transaction?: string };
+          txHash = pr.transaction;
+        }
+      } catch { /* ignore */ }
+
+      const data = await paid.json().catch(() => null);
+      return { ok: paid.ok, status: paid.status, data, paid: true, txHash };
+    } catch (err) {
+      clearTimeout(payTimer);
+      throw err;
+    }
   } catch (err) {
     clearTimeout(timer);
     throw err;
+  } finally {
+    signal?.removeEventListener("abort", onExternalAbort);
   }
 }

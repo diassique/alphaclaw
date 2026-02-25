@@ -1,5 +1,5 @@
 /**
- * Structured JSON logging — zero dependencies.
+ * Structured JSON logging — zero dependencies, async buffered writes.
  * Each service creates its own logger: `createLogger("sentiment")`.
  */
 
@@ -13,13 +13,45 @@ interface LogEntry {
   [key: string]: unknown;
 }
 
+// ─── Async write buffer ──────────────────────────────────────────────────────
+
+const FLUSH_INTERVAL = 50; // ms
+const MAX_BUFFER = 100;
+
+let stdoutBuf: string[] = [];
+let stderrBuf: string[] = [];
+
+function flushStdout(): void {
+  if (stdoutBuf.length === 0) return;
+  const batch = stdoutBuf.join("");
+  stdoutBuf = [];
+  process.stdout.write(batch);
+}
+
+function flushStderr(): void {
+  if (stderrBuf.length === 0) return;
+  const batch = stderrBuf.join("");
+  stderrBuf = [];
+  process.stderr.write(batch);
+}
+
+const stdoutTimer = setInterval(flushStdout, FLUSH_INTERVAL);
+const stderrTimer = setInterval(flushStderr, FLUSH_INTERVAL);
+stdoutTimer.unref();
+stderrTimer.unref();
+
+// Flush on exit
+process.on("beforeExit", () => { flushStdout(); flushStderr(); });
+
 function emit(level: LogLevel, service: string, msg: string, meta?: Record<string, unknown>): void {
   const entry: LogEntry = { ts: new Date().toISOString(), level, service, msg, ...meta };
-  const line = JSON.stringify(entry);
+  const line = JSON.stringify(entry) + "\n";
   if (level === "error" || level === "warn") {
-    process.stderr.write(line + "\n");
+    stderrBuf.push(line);
+    if (stderrBuf.length >= MAX_BUFFER) flushStderr();
   } else {
-    process.stdout.write(line + "\n");
+    stdoutBuf.push(line);
+    if (stdoutBuf.length >= MAX_BUFFER) flushStdout();
   }
 }
 

@@ -1,4 +1,6 @@
 import express from "express";
+import compression from "compression";
+import helmet from "helmet";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -17,7 +19,11 @@ const log = createLogger("coordinator");
 const port = config.ports.agent;
 
 const app = express();
-app.use(express.json());
+
+// Security & performance middleware
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(compression());
+app.use(express.json({ limit: "10kb" }));
 
 // ─── Paywall ─────────────────────────────────────────────────────────────────
 
@@ -65,7 +71,9 @@ function getLocalIP(): string | null {
   return null;
 }
 
-app.listen(port, "0.0.0.0", () => {
+const SHUTDOWN_TIMEOUT = 10_000;
+
+const server = app.listen(port, "0.0.0.0", () => {
   const ip = getLocalIP();
   log.info("AlphaClaw Network Coordinator started", {
     port,
@@ -75,3 +83,19 @@ app.listen(port, "0.0.0.0", () => {
     sellPrice: "$0.050",
   });
 });
+
+// Graceful shutdown
+const shutdown = (signal: string) => {
+  log.info(`${signal} received — shutting down coordinator`);
+  server.close(() => {
+    log.info("coordinator server closed");
+    process.exit(0);
+  });
+  setTimeout(() => {
+    log.warn("graceful shutdown timed out — forcing exit");
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT).unref();
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

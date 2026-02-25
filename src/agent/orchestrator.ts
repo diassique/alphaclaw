@@ -13,55 +13,55 @@ const DEFI_URL       = serviceUrl("defi");
 const NEWS_URL       = serviceUrl("news");
 const WHALE_URL      = serviceUrl("whale");
 
-export async function callSentiment(text: string): Promise<ServiceResponse> {
+export async function callSentiment(text: string, signal?: AbortSignal): Promise<ServiceResponse> {
   return x402Fetch(`${SENTIMENT_URL}/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
-  }) as Promise<ServiceResponse>;
+  }, SUB_CALL_TIMEOUT, signal) as Promise<ServiceResponse>;
 }
 
-export async function callPolymarket(filter: string | null): Promise<ServiceResponse> {
+export async function callPolymarket(filter: string | null, signal?: AbortSignal): Promise<ServiceResponse> {
   return x402Fetch(`${POLYMARKET_URL}/scan`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filter, limit: 5 }),
-  }) as Promise<ServiceResponse>;
+  }, SUB_CALL_TIMEOUT, signal) as Promise<ServiceResponse>;
 }
 
-export async function callDefi(asset: string | null): Promise<ServiceResponse> {
+export async function callDefi(asset: string | null, signal?: AbortSignal): Promise<ServiceResponse> {
   return x402Fetch(`${DEFI_URL}/scan`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ asset, limit: 5 }),
-  }) as Promise<ServiceResponse>;
+  }, SUB_CALL_TIMEOUT, signal) as Promise<ServiceResponse>;
 }
 
-export async function callNews(topic: string): Promise<ServiceResponse> {
+export async function callNews(topic: string, signal?: AbortSignal): Promise<ServiceResponse> {
   return x402Fetch(`${NEWS_URL}/news`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ topic, limit: 5 }),
-  }) as Promise<ServiceResponse>;
+  }, SUB_CALL_TIMEOUT, signal) as Promise<ServiceResponse>;
 }
 
-export async function callWhale(address?: string): Promise<ServiceResponse> {
+export async function callWhale(address?: string, signal?: AbortSignal): Promise<ServiceResponse> {
   return x402Fetch(`${WHALE_URL}/whale`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ address, limit: 10 }),
-  }) as Promise<ServiceResponse>;
+  }, SUB_CALL_TIMEOUT, signal) as Promise<ServiceResponse>;
 }
 
-export async function callAllServices(topic: string): Promise<SettledResult> {
+export async function callAllServices(topic: string, signal?: AbortSignal): Promise<SettledResult> {
   const warnings: string[] = [];
 
   const [newsR, sentimentR, polymarketR, defiR, whaleR] = await Promise.allSettled([
-    callNews(topic),
-    callSentiment(topic),
-    callPolymarket(topic),
-    callDefi(topic),
-    callWhale(),
+    callNews(topic, signal),
+    callSentiment(topic, signal),
+    callPolymarket(topic, signal),
+    callDefi(topic, signal),
+    callWhale(undefined, signal),
   ]);
 
   function unwrap(r: PromiseSettledResult<ServiceResponse>, name: string): ServiceResponse | null {

@@ -67,6 +67,8 @@ async function fetchETHPrice(): Promise<number> {
 
 // ─── On-chain fetchers using viem ───────────────────────────────────────────
 
+const BATCH_SIZE = 10; // fetch blocks in parallel batches
+
 async function fetchETHTransfers(address: string): Promise<WhaleMovement[]> {
   const addr = address.toLowerCase();
   const ethPrice = await fetchETHPrice();
@@ -77,29 +79,41 @@ async function fetchETHTransfers(address: string): Promise<WhaleMovement[]> {
 
     const movements: WhaleMovement[] = [];
 
-    for (let blockNum = latestBlock; blockNum > fromBlock && movements.length < 20; blockNum--) {
-      const block = await publicClient.getBlock({ blockNumber: blockNum, includeTransactions: true });
-      if (!block.transactions || !Array.isArray(block.transactions)) continue;
+    // Batch block fetches to avoid sequential RPC round-trips
+    for (let batchStart = latestBlock; batchStart > fromBlock && movements.length < 20; batchStart -= BigInt(BATCH_SIZE)) {
+      const blockNums: bigint[] = [];
+      for (let i = 0n; i < BigInt(BATCH_SIZE) && batchStart - i > fromBlock; i++) {
+        blockNums.push(batchStart - i);
+      }
 
-      for (const tx of block.transactions) {
-        if (typeof tx === "string") continue;
-        const from = tx.from?.toLowerCase() ?? "";
-        const to = tx.to?.toLowerCase() ?? "";
-        if (from !== addr && to !== addr) continue;
+      const blocks = await Promise.all(
+        blockNums.map((bn) => publicClient.getBlock({ blockNumber: bn, includeTransactions: true }).catch(() => null)),
+      );
 
-        const ethVal = parseFloat(formatEther(tx.value));
-        if (ethVal < WHALE_THRESHOLD_ETH) continue;
+      for (const block of blocks) {
+        if (!block?.transactions || !Array.isArray(block.transactions)) continue;
+        if (movements.length >= 20) break;
 
-        movements.push({
-          hash: tx.hash,
-          from: tx.from,
-          to: tx.to ?? "0x0",
-          value: ethVal.toFixed(6),
-          tokenSymbol: "ETH",
-          timestamp: new Date(Number(block.timestamp) * 1000).toISOString(),
-          isWhale: ethVal >= WHALE_THRESHOLD_ETH * 10,
-          usdEstimate: ethPrice > 0 ? `$${(ethVal * ethPrice).toFixed(2)}` : undefined,
-        });
+        for (const tx of block.transactions) {
+          if (typeof tx === "string") continue;
+          const from = tx.from?.toLowerCase() ?? "";
+          const to = tx.to?.toLowerCase() ?? "";
+          if (from !== addr && to !== addr) continue;
+
+          const ethVal = parseFloat(formatEther(tx.value));
+          if (ethVal < WHALE_THRESHOLD_ETH) continue;
+
+          movements.push({
+            hash: tx.hash,
+            from: tx.from,
+            to: tx.to ?? "0x0",
+            value: ethVal.toFixed(6),
+            tokenSymbol: "ETH",
+            timestamp: new Date(Number(block.timestamp) * 1000).toISOString(),
+            isWhale: ethVal >= WHALE_THRESHOLD_ETH * 10,
+            usdEstimate: ethPrice > 0 ? `$${(ethVal * ethPrice).toFixed(2)}` : undefined,
+          });
+        }
       }
     }
 
@@ -111,8 +125,6 @@ async function fetchETHTransfers(address: string): Promise<WhaleMovement[]> {
 }
 
 async function fetchERC20Transfers(address: string): Promise<WhaleMovement[]> {
-  const ethPrice = await fetchETHPrice();
-  void ethPrice;
 
   try {
     const latestBlock = await publicClient.getBlockNumber();

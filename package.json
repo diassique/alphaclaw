@@ -4,17 +4,17 @@
   "type": "module",
   "description": "Autonomous AI agent network hunting alpha on Polymarket & DeFi via x402 micropayments",
   "scripts": {
-    "start":       "tsx src/start-all.ts",
-    "demo":        "tsx src/demo.ts",
+    "start": "tsx src/start-all.ts",
+    "demo": "tsx src/demo.ts",
     "demo:health": "tsx src/demo.ts --health",
-    "sentiment":   "tsx src/services/sentiment/index.ts",
-    "polymarket":  "tsx src/services/polymarket/index.ts",
-    "defi":        "tsx src/services/defi/index.ts",
-    "news":        "tsx src/services/news/index.ts",
-    "whale":       "tsx src/services/whale/index.ts",
-    "hunter":      "tsx src/agent/index.ts",
-    "typecheck":   "tsc --noEmit",
-    "tunnel":      "cloudflared tunnel --url http://localhost:5000 --no-autoupdate"
+    "sentiment": "tsx src/services/sentiment/index.ts",
+    "polymarket": "tsx src/services/polymarket/index.ts",
+    "defi": "tsx src/services/defi/index.ts",
+    "news": "tsx src/services/news/index.ts",
+    "whale": "tsx src/services/whale/index.ts",
+    "hunter": "tsx src/agent/index.ts",
+    "typecheck": "tsc --noEmit",
+    "tunnel": "cloudflared tunnel --url http://localhost:5000 --no-autoupdate"
   },
   "keywords": [
     "x402",
@@ -29,13 +29,16 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "compression": "^1.8.1",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "helmet": "^8.1.0",
     "viem": "^2.0.0",
     "x402": "^1.0.0",
     "x402-express": "^1.1.0"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
     "@types/node": "^25.3.0",
     "tsx": "^4.21.0",

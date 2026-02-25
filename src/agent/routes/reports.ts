@@ -1,5 +1,5 @@
 import type { Application } from "express";
-import { reportCache, evictExpired, isReportExpired } from "../report-cache.js";
+import { reportCache, evictExpired, isReportExpired, touchReport } from "../report-cache.js";
 
 export function registerReportRoutes(app: Application): void {
   app.get("/report/:id", (req, res) => {
@@ -17,6 +17,7 @@ export function registerReportRoutes(app: Application): void {
       return;
     }
 
+    touchReport(report);
     res.json({
       service: "alphaclaw-coordinator",
       reportId: id,
