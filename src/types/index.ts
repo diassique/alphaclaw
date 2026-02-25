@@ -1,0 +1,212 @@
+// ─── Sentiment ──────────────────────────────────────────────────────────────
+
+export type SentimentLabel = "strongly_bullish" | "bullish" | "neutral" | "bearish" | "strongly_bearish";
+export type ConfidenceLevel = "high" | "medium" | "low";
+
+export interface SentimentSignal {
+  word: string;
+  type: "STRONG_BULL" | "STRONG_BEAR" | "BULL" | "BEAR";
+  score: number;
+}
+
+export interface SentimentResult {
+  label: string;
+  score: number;
+  confidence: string;
+}
+
+// ─── Polymarket ─────────────────────────────────────────────────────────────
+
+export type AlphaSignal = "HIGH" | "MEDIUM" | "LOW";
+
+export interface PolymarketMarket {
+  question?: string;
+  title?: string;
+  volume?: string | number;
+  volumeNum?: string | number;
+  outcomePrices?: string | number[];
+  active?: boolean;
+  endDate?: string;
+  endDateIso?: string;
+}
+
+export interface AlphaOpportunity {
+  question: string;
+  yesPrice: number;
+  noPrice: number;
+  volume24h: number;
+  endDate?: string;
+  alphaSignal: AlphaSignal;
+  reason: string;
+}
+
+// ─── DeFi ───────────────────────────────────────────────────────────────────
+
+export type AlphaLevel = "HOT" | "WARM" | "COOL";
+
+export interface CoinGeckoToken {
+  id: string;
+  symbol: string;
+  name: string;
+  current_price: number;
+  price_change_percentage_1h_in_currency?: number;
+  price_change_percentage_24h?: number;
+  price_change_percentage_7d_in_currency?: number;
+  market_cap: number;
+  total_volume: number;
+}
+
+export interface ScoredToken {
+  id: string;
+  symbol: string;
+  name: string;
+  price: number;
+  change1h: number;
+  change24h: number;
+  change7d: number;
+  volumeToMcap: string;
+  alphaScore: number;
+  alphaLevel: AlphaLevel;
+  suggestedAction: string;
+}
+
+// ─── News ───────────────────────────────────────────────────────────────────
+
+export interface NewsArticle {
+  title: string;
+  description: string;
+  publishedAt: string;
+  source: string;
+  url?: string;
+}
+
+export interface CryptoPanicPost {
+  title: string;
+  published_at: string;
+  url: string;
+  source: { title: string; domain: string };
+  metadata?: { description?: string };
+}
+
+export interface CryptoPanicResponse {
+  results?: CryptoPanicPost[];
+}
+
+export interface NewsResult {
+  topic: string;
+  articles: Array<{ title: string; description: string; publishedAt: string; source: string }>;
+  count: number;
+}
+
+// ─── Whale ──────────────────────────────────────────────────────────────────
+
+export interface WhaleMovement {
+  hash: string;
+  from: string;
+  to: string;
+  value: string;
+  tokenSymbol: string;
+  timestamp: string;
+  isWhale: boolean;
+  usdEstimate?: string;
+}
+
+export interface WhaleResult {
+  address: string;
+  movements: Array<{ hash: string; from: string; to: string; value: string; tokenSymbol: string; isWhale: boolean }>;
+  whaleCount: number;
+  totalVolumeUSD: string;
+  signal: string;
+}
+
+// ─── Hunter / Orchestrator ──────────────────────────────────────────────────
+
+export interface X402Body {
+  accepts: Array<{
+    maxAmountRequired?: string;
+    description?: string;
+    scheme?: string;
+    network?: string;
+  }>;
+  x402Version?: number;
+}
+
+export interface X402FetchResult {
+  ok: boolean;
+  status: number;
+  data: unknown;
+  paid: boolean;
+  txHash?: string;
+  demoMode?: boolean;
+  paymentRequired?: { description?: string; amount: string };
+}
+
+export interface ServiceResponse {
+  ok: boolean;
+  data: { result?: SentimentResult | PolymarketResult | DefiResult | NewsResult | WhaleResult } | null;
+  paid: boolean;
+  txHash?: string;
+  demoMode?: boolean;
+  paymentRequired?: { description?: string; amount: string };
+}
+
+export interface PolymarketResult {
+  topSignal: string;
+  opportunities?: Array<{ question: string; alphaSignal: string; yesPrice: number }>;
+}
+
+export interface DefiOpportunity {
+  symbol: string;
+  alphaLevel: string;
+  suggestedAction: string;
+  change24h: number;
+}
+
+export interface DefiResult {
+  topOpportunity?: DefiOpportunity;
+}
+
+export interface PaymentEntry {
+  service: string;
+  price: string;
+  paid: boolean;
+  txHash?: string;
+}
+
+export interface PaymentLog {
+  totalPaid: string;
+  breakdown: PaymentEntry[];
+}
+
+export interface AlphaSynthesis {
+  confidence: string;
+  recommendation: string;
+  signals: string[];
+  warnings?: string[];
+  breakdown: {
+    sentiment: Pick<SentimentResult, "label" | "score" | "confidence"> | null;
+    polymarket: { market: string; signal: string; yesPrice: number } | null;
+    defi: { asset: string; action: string; change24h: string } | null;
+    news: { topHeadline: string; articleCount: number } | null;
+    whale: { signal: string; whaleCount: number; totalVolume: string } | null;
+  };
+}
+
+export interface CachedReport {
+  id: string;
+  topic: string;
+  timestamp: string;
+  createdAt: number;
+  alpha: AlphaSynthesis;
+  agentPayments: PaymentLog;
+  preview: string;
+}
+
+export interface SettledResult {
+  news: ServiceResponse | null;
+  sentiment: ServiceResponse | null;
+  polymarket: ServiceResponse | null;
+  defi: ServiceResponse | null;
+  whale: ServiceResponse | null;
+  warnings: string[];
+}

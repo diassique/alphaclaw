@@ -2,21 +2,17 @@
  * AlphaClaw Demo — shows the full agent-to-agent x402 payment flow in the terminal.
  *
  * Usage:
- *   tsx demo.ts              # full demo (services must be running)
- *   tsx demo.ts --health     # just check health of all services
- *   tsx demo.ts --topic eth  # hunt alpha for a specific topic
+ *   tsx src/demo.ts              # full demo (services must be running)
+ *   tsx src/demo.ts --health     # just check health of all services
+ *   tsx src/demo.ts --topic eth  # hunt alpha for a specific topic
  */
 
-import dotenv from "dotenv";
-dotenv.config();
+import { config } from "./config/env.js";
 
-const {
-  PORT_SENTIMENT  = "4001",
-  PORT_POLYMARKET = "4002",
-  PORT_DEFI       = "4003",
-  PORT_AGENT      = "5000",
-  WALLET_ADDRESS,
-} = process.env;
+const PORT_SENTIMENT  = config.ports.sentiment;
+const PORT_POLYMARKET = config.ports.polymarket;
+const PORT_DEFI       = config.ports.defi;
+const PORT_AGENT      = config.ports.agent;
 
 const args      = process.argv.slice(2);
 const topicIdx  = args.indexOf("--topic");
@@ -101,10 +97,10 @@ async function runDemo(): Promise<void> {
   step("🏥", "Service Health Check");
   divider();
   const services = [
-    { name: "Sentiment Analysis (port 4001)",      url: `http://localhost:${PORT_SENTIMENT}` },
-    { name: "Prediction Markets (port 4002)",      url: `http://localhost:${PORT_POLYMARKET}` },
-    { name: "DeFi Trends (port 4003)",             url: `http://localhost:${PORT_DEFI}` },
-    { name: "AlphaClaw Hunter (port 5000)",        url: `http://localhost:${PORT_AGENT}` },
+    { name: `Sentiment Analysis (port ${PORT_SENTIMENT})`,      url: `http://localhost:${PORT_SENTIMENT}` },
+    { name: `Prediction Markets (port ${PORT_POLYMARKET})`,     url: `http://localhost:${PORT_POLYMARKET}` },
+    { name: `DeFi Trends (port ${PORT_DEFI})`,                  url: `http://localhost:${PORT_DEFI}` },
+    { name: `AlphaClaw Hunter (port ${PORT_AGENT})`,            url: `http://localhost:${PORT_AGENT}` },
   ];
 
   const healths = await Promise.all(services.map((s) => checkHealth(s.name, s.url)));
@@ -115,14 +111,14 @@ async function runDemo(): Promise<void> {
     if (healths.every(Boolean)) {
       console.log(`  ${c("green", "All systems operational")}\n`);
     } else {
-      console.log(`  ${c("red", "Some services are offline — run: tsx start-all.ts")}\n`);
+      console.log(`  ${c("red", "Some services are offline — run: npm start")}\n`);
     }
     return;
   }
 
   if (!healths[3]) {
     console.log(`\n  ${c("red", "✗")} AlphaClaw Hunter is not running.\n`);
-    console.log(`  Start all services first:\n    ${c("cyan", "tsx start-all.ts")}\n`);
+    console.log(`  Start all services first:\n    ${c("cyan", "npm start")}\n`);
     process.exit(1);
   }
 
@@ -185,7 +181,6 @@ async function runDemo(): Promise<void> {
 
   console.log(`  ${c("magenta", "Agent-to-Agent Payment Flow:")}\n`);
 
-  // ── Interfaces for parsed responses ──
   interface SentimentResp { result?: { label?: string; score?: number; confidence?: string } }
   interface PolyResp      { result?: { opportunities?: Array<{ question?: string; alphaSignal?: string; yesPrice?: number; noPrice?: number }> } }
   interface DefiResp      { result?: { topOpportunity?: { symbol?: string; alphaLevel?: string; change24h?: number; suggestedAction?: string } } }
@@ -339,7 +334,7 @@ async function runDemo(): Promise<void> {
   console.log(`  ${dim("You paid:")}           ${c("yellow", "$0.05")} USDC → AlphaClaw Hunter`);
   console.log(`  ${dim("Hunter paid:")}        ${c("yellow", "$0.045")} USDC → 3 data services`);
   console.log(`  ${dim("Hunter margin:")}      ${c("green", "$0.005")} USDC per hunt`);
-  console.log(`  ${dim("Receiver wallet:")}    ${c("cyan", WALLET_ADDRESS ?? "(not configured)")}`);
+  console.log(`  ${dim("Receiver wallet:")}    ${c("cyan", config.walletAddress || "(not configured)")}`);
   console.log(`  ${dim("Network:")}            Base Sepolia (USDC)`);
   console.log();
   console.log(`  ${dim("To enable real payments, add to .env:")}`);
