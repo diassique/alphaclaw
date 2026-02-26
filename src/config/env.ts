@@ -19,6 +19,17 @@ export interface AppConfig {
     whale: number;
     agent: number;
   };
+  telegram: {
+    botToken: string;
+    chatId: string;
+    alertThreshold: number;
+  };
+  autopilot: {
+    baseIntervalMs: number;
+    minIntervalMs: number;
+    maxIntervalMs: number;
+    topics: string[];
+  };
 }
 
 function env(key: string, fallback: string): string {
@@ -48,5 +59,18 @@ export const config: AppConfig = Object.freeze({
     news: envInt("PORT_NEWS", 4004),
     whale: envInt("PORT_WHALE", 4005),
     agent: envInt("PORT_AGENT", 5000),
+  }),
+  telegram: Object.freeze({
+    botToken: env("TELEGRAM_BOT_TOKEN", ""),
+    chatId: env("TELEGRAM_CHAT_ID", ""),
+    alertThreshold: envInt("TELEGRAM_ALERT_THRESHOLD", 50),
+  }),
+  autopilot: Object.freeze({
+    baseIntervalMs: envInt("AUTOPILOT_INTERVAL_MS", 5 * 60_000),
+    minIntervalMs: envInt("AUTOPILOT_MIN_INTERVAL_MS", 60_000),
+    maxIntervalMs: envInt("AUTOPILOT_MAX_INTERVAL_MS", 15 * 60_000),
+    topics: Object.freeze(
+      env("AUTOPILOT_TOPICS", "bitcoin,ethereum,solana,DeFi alpha,crypto market").split(",").map(t => t.trim()),
+    ) as unknown as string[],
   }),
 });

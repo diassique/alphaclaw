@@ -20,6 +20,7 @@ import {
   getReputationSnapshot,
 } from "./reputation.js";
 import { getAllDynamicPrices } from "../config/services.js";
+import { getConfidenceAdjustment } from "./memory.js";
 
 export function synthesizeAlpha({
   huntId,
@@ -129,9 +130,17 @@ export function synthesizeAlpha({
     maxPossibleWeight += 1.0 * 1.0 * 1.0; // theoretical max
   }
 
-  const weightedConfidence = maxPossibleWeight > 0
+  let weightedConfidence = maxPossibleWeight > 0
     ? parseFloat((totalWeight / maxPossibleWeight * 100).toFixed(1))
     : 0;
+
+  // Apply memory-based adjustment
+  const memoryAdj = getConfidenceAdjustment(signals);
+  if (memoryAdj.adjustment !== 0) {
+    weightedConfidence = parseFloat(Math.max(0, Math.min(100, weightedConfidence + memoryAdj.adjustment)).toFixed(1));
+    if (memoryAdj.adjustment > 0) signals.push(`memory:+${memoryAdj.adjustment}`);
+    else signals.push(`memory:${memoryAdj.adjustment}`);
+  }
 
   const confidence = Math.min(Math.round(weightedConfidence), 100);
 

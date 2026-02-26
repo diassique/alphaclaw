@@ -7,6 +7,8 @@ import { callAllServices } from "../orchestrator.js";
 import { synthesizeAlpha } from "../synthesis.js";
 import { generateReportId, cacheReport } from "../report-cache.js";
 import { getEffectivePrice } from "../../config/services.js";
+import { recordHunt } from "../memory.js";
+import { notifyHuntResult } from "../telegram.js";
 import type { SentimentResult, PolymarketResult, DefiResult, NewsResult, WhaleResult, PaymentLog, CachedReport } from "../../types/index.js";
 
 const log = createLogger("coordinator");
@@ -59,6 +61,18 @@ export function registerHuntRoutes(app: Application): void {
       preview: `${alpha.recommendation} | Confidence: ${alpha.confidence}`,
     };
     cacheReport(report);
+
+    // Record in memory for pattern learning
+    recordHunt({
+      topic,
+      timestamp: ts,
+      signals: alpha.signals,
+      confidence: alpha.weightedConfidence,
+      recommendation: alpha.recommendation,
+    });
+
+    // Notify Telegram (async, don't block response)
+    notifyHuntResult(topic, alpha, "manual").catch(() => {});
 
     res.json({
       service: "alphaclaw-coordinator",

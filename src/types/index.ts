@@ -278,3 +278,95 @@ export interface SettledResult {
   warnings: string[];
   competitionResult?: CompetitionResult;
 }
+
+// ─── Circuit Breaker ────────────────────────────────────────────────────────
+
+export type CircuitState = "closed" | "open" | "half-open";
+
+export interface CircuitBreakerEntry {
+  state: CircuitState;
+  failures: number;
+  lastFailure: number;
+  lastSuccess: number;
+  openedAt: number;
+}
+
+export interface CircuitBreakerStatus {
+  [key: string]: CircuitBreakerEntry;
+}
+
+// ─── Autopilot ──────────────────────────────────────────────────────────────
+
+export type AutopilotPhase = "idle" | "hunting" | "adapting" | "waiting";
+
+export interface AutopilotConfig {
+  topics: string[];
+  baseIntervalMs: number;
+  minIntervalMs: number;
+  maxIntervalMs: number;
+}
+
+export interface AdaptationRecord {
+  timestamp: string;
+  oldIntervalMs: number;
+  newIntervalMs: number;
+  confidence: number;
+  reason: string;
+}
+
+export interface AutopilotStatus {
+  running: boolean;
+  phase: AutopilotPhase;
+  currentIntervalMs: number;
+  huntCount: number;
+  topicIndex: number;
+  nextHuntAt: string | null;
+  adaptations: AdaptationRecord[];
+  lastConfidence: number | null;
+}
+
+// ─── Agent Memory ───────────────────────────────────────────────────────────
+
+export interface MemoryEntry {
+  id: string;
+  topic: string;
+  timestamp: string;
+  signals: string[];
+  confidence: number;
+  recommendation: string;
+  verified?: boolean;
+  outcome?: "correct" | "incorrect";
+}
+
+export interface SignalCombination {
+  combo: string;           // sorted signals joined, e.g. "sentiment:bullish+whale:ACCUMULATION"
+  occurrences: number;
+  correctCount: number;
+  accuracy: number;         // correctCount / verified occurrences
+  lastSeen: string;
+}
+
+export interface MemoryInsight {
+  combo: string;
+  accuracy: number;
+  occurrences: number;
+  adjustment: number;       // confidence adjustment points
+}
+
+export interface MemoryStats {
+  totalEntries: number;
+  verifiedEntries: number;
+  patterns: number;
+  activePatterns: number;   // patterns with 3+ occurrences
+  topPatterns: MemoryInsight[];
+  weakPatterns: MemoryInsight[];
+}
+
+// ─── Telegram ───────────────────────────────────────────────────────────────
+
+export interface TelegramConfig {
+  botToken: string;
+  chatId: string;
+  alertThreshold: number;   // minimum confidence % to send alert
+  enabled: boolean;
+}

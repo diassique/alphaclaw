@@ -206,6 +206,182 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ─── Circuit Breaker ──────────────────────────────────────────────────── */
+    .circuit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: .75rem;
+      margin-bottom: 2rem;
+    }
+    .circuit-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      transition: border-color .3s;
+    }
+    .circuit-card.circuit-open { border-color: var(--red); }
+    .circuit-card.circuit-half-open { border-color: var(--yellow); }
+    .circuit-card.circuit-closed { border-color: var(--green); }
+    .circuit-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .circuit-dot.closed { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .circuit-dot.open { background: var(--red); box-shadow: 0 0 6px var(--red); animation: pulse 1s infinite; }
+    .circuit-dot.half-open { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: pulse 1.5s infinite; }
+    .circuit-info { flex: 1; }
+    .circuit-name { font-size: .8rem; font-weight: 600; }
+    .circuit-state { font-size: .68rem; font-family: var(--mono); color: var(--text2); text-transform: uppercase; }
+
+    /* ─── Autopilot ────────────────────────────────────────────────────────── */
+    .autopilot-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .ap-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .ap-status {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-family: var(--mono);
+      font-size: .8rem;
+    }
+    .ap-phase {
+      padding: .2rem .6rem;
+      border-radius: 6px;
+      font-size: .7rem;
+      font-weight: 700;
+      font-family: var(--mono);
+    }
+    .ap-phase.idle { background: rgba(71,85,105,.2); color: var(--text3); }
+    .ap-phase.hunting { background: rgba(124,58,237,.2); color: var(--accent2); animation: pulse 1s infinite; }
+    .ap-phase.adapting { background: rgba(6,182,212,.2); color: var(--accent3); }
+    .ap-phase.waiting { background: rgba(16,185,129,.2); color: var(--green); }
+    .ap-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: .5rem;
+      font-size: .75rem;
+      color: var(--text2);
+      font-family: var(--mono);
+    }
+    .ap-meta-item { background: var(--bg3); border-radius: 8px; padding: .5rem .75rem; }
+    .ap-meta-label { font-size: .65rem; color: var(--text3); text-transform: uppercase; margin-bottom: .2rem; }
+    .ap-meta-val { font-weight: 600; color: var(--text); }
+    .ap-timeline {
+      margin-top: 1rem;
+      max-height: 150px;
+      overflow-y: auto;
+      font-size: .7rem;
+      font-family: var(--mono);
+      color: var(--text2);
+    }
+    .ap-timeline-item {
+      padding: .25rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+    .btn-sm {
+      padding: .4rem 1rem;
+      font-size: .78rem;
+      border-radius: 8px;
+    }
+    .btn-green {
+      background: rgba(16,185,129,.15);
+      border: 1px solid rgba(16,185,129,.3);
+      color: var(--green);
+      cursor: pointer;
+      font-family: var(--sans);
+      font-weight: 600;
+      transition: all .2s;
+    }
+    .btn-green:hover { background: rgba(16,185,129,.25); }
+    .btn-red {
+      background: rgba(239,68,68,.15);
+      border: 1px solid rgba(239,68,68,.3);
+      color: var(--red);
+      cursor: pointer;
+      font-family: var(--sans);
+      font-weight: 600;
+      transition: all .2s;
+    }
+    .btn-red:hover { background: rgba(239,68,68,.25); }
+
+    /* ─── Memory ───────────────────────────────────────────────────────────── */
+    .memory-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .memory-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+    .memory-stat {
+      background: var(--bg3);
+      border-radius: 8px;
+      padding: .5rem .75rem;
+      text-align: center;
+    }
+    .memory-stat-val { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+    .memory-stat-label { font-size: .65rem; color: var(--text3); text-transform: uppercase; margin-top: .1rem; }
+    .memory-patterns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 600px) { .memory-patterns { grid-template-columns: 1fr; } }
+    .pattern-col h4 { font-size: .75rem; color: var(--text2); margin-bottom: .5rem; }
+    .pattern-item {
+      background: var(--bg3);
+      border-radius: 6px;
+      padding: .4rem .6rem;
+      margin-bottom: .35rem;
+      font-size: .7rem;
+      font-family: var(--mono);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .pattern-combo { color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: .5rem; }
+    .pattern-acc { font-weight: 700; }
+    .pattern-acc.good { color: var(--green); }
+    .pattern-acc.weak { color: var(--red); }
+    .pattern-adj { font-size: .65rem; color: var(--text3); margin-left: .5rem; }
+
+    /* ─── Telegram Badge ───────────────────────────────────────────────────── */
+    .tg-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .25rem .6rem;
+      border-radius: 100px;
+      font-size: .68rem;
+      font-family: var(--mono);
+      font-weight: 700;
+    }
+    .tg-badge.tg-on { background: rgba(0,136,204,.12); border: 1px solid rgba(0,136,204,.3); color: #0088cc; }
+    .tg-badge.tg-off { background: rgba(71,85,105,.12); border: 1px solid rgba(71,85,105,.3); color: var(--text3); }
+
     main {
       position: relative;
       z-index: 1;
@@ -865,6 +1041,7 @@
       </div>
     </div>
     <div class="nav-right">
+      <span class="tg-badge tg-off" id="tg-badge" title="Telegram Bot">TG OFF</span>
       <span class="badge badge-green"><span class="dot"></span> LIVE</span>
       <span class="badge badge-purple">Base Sepolia · x402</span>
     </div>
@@ -941,6 +1118,58 @@
             <div class="alpha-signals" id="alpha-signals"></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Autopilot -->
+    <div class="section-title">🤖 Autopilot Mode</div>
+    <div class="autopilot-panel" id="autopilot-panel">
+      <div class="ap-controls">
+        <button class="btn-sm btn-green" id="ap-start-btn" onclick="toggleAutopilot()">Start Autopilot</button>
+        <div class="ap-status">
+          <span class="ap-phase idle" id="ap-phase">IDLE</span>
+          <span id="ap-hunt-count" style="color:var(--text3)">0 hunts</span>
+        </div>
+      </div>
+      <div class="ap-meta" id="ap-meta">
+        <div class="ap-meta-item">
+          <div class="ap-meta-label">Interval</div>
+          <div class="ap-meta-val" id="ap-interval">5m 0s</div>
+        </div>
+        <div class="ap-meta-item">
+          <div class="ap-meta-label">Next Hunt</div>
+          <div class="ap-meta-val" id="ap-next">—</div>
+        </div>
+        <div class="ap-meta-item">
+          <div class="ap-meta-label">Last Confidence</div>
+          <div class="ap-meta-val" id="ap-confidence">—</div>
+        </div>
+        <div class="ap-meta-item">
+          <div class="ap-meta-label">Topic Index</div>
+          <div class="ap-meta-val" id="ap-topic">0</div>
+        </div>
+      </div>
+      <div class="ap-timeline" id="ap-timeline"></div>
+    </div>
+
+    <!-- Circuit Breaker -->
+    <div class="section-title">🔌 Circuit Breakers</div>
+    <div class="circuit-grid" id="circuit-grid">
+      <div style="color:var(--text3);font-size:.8rem;grid-column:1/-1;text-align:center;padding:.75rem;">Loading circuits...</div>
+    </div>
+
+    <!-- Memory -->
+    <div class="section-title">🧠 Agent Memory</div>
+    <div class="memory-panel" id="memory-panel">
+      <div class="memory-stats-grid" id="memory-stats">
+        <div class="memory-stat"><div class="memory-stat-val" id="mem-entries">0</div><div class="memory-stat-label">Entries</div></div>
+        <div class="memory-stat"><div class="memory-stat-val" id="mem-verified">0</div><div class="memory-stat-label">Verified</div></div>
+        <div class="memory-stat"><div class="memory-stat-val" id="mem-patterns">0</div><div class="memory-stat-label">Patterns</div></div>
+        <div class="memory-stat"><div class="memory-stat-val" id="mem-active">0</div><div class="memory-stat-label">Active</div></div>
+      </div>
+      <div class="memory-patterns" id="memory-patterns">
+        <div class="pattern-col"><h4>Top Patterns</h4><div id="mem-top">—</div></div>
+        <div class="pattern-col"><h4>Weak Patterns</h4><div id="mem-weak">—</div></div>
       </div>
     </div>
 
@@ -1612,6 +1841,190 @@
       reason.textContent = data.reason;
     }
 
+    // ─── Circuit Breakers ──────────────────────────────────────────────────
+
+    const CIRCUIT_LABELS = {
+      sentiment: '💬 Sentiment', sentiment2: '💬 Sent. v2',
+      polymarket: '🎲 Polymarket', defi: '🏦 DeFi',
+      news: '📰 News', whale: '🐳 Whale'
+    };
+
+    async function loadCircuits() {
+      try {
+        const r = await fetch('/circuits');
+        const d = await r.json();
+        const grid = document.getElementById('circuit-grid');
+        const keys = Object.keys(d);
+        if (!keys.length) {
+          grid.innerHTML = '<div style="color:var(--text3);font-size:.8rem;grid-column:1/-1;text-align:center;padding:.75rem;">No circuit data yet — run a hunt first</div>';
+          return;
+        }
+        grid.innerHTML = keys.map(k => {
+          const c = d[k];
+          return `
+            <div class="circuit-card circuit-${c.state}">
+              <div class="circuit-dot ${c.state}"></div>
+              <div class="circuit-info">
+                <div class="circuit-name">${CIRCUIT_LABELS[k] || k}</div>
+                <div class="circuit-state">${c.state} · ${c.failures} fails</div>
+              </div>
+            </div>`;
+        }).join('');
+      } catch(e) {}
+    }
+
+    // ─── Autopilot ─────────────────────────────────────────────────────────
+
+    let autopilotRunning = false;
+    let apSSE = null;
+    let apTimelineItems = [];
+
+    function formatMs(ms) {
+      const s = Math.round(ms / 1000);
+      return s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`;
+    }
+
+    function updateApUI(status) {
+      autopilotRunning = status.running;
+      const btn = document.getElementById('ap-start-btn');
+      btn.textContent = status.running ? 'Stop Autopilot' : 'Start Autopilot';
+      btn.className = status.running ? 'btn-sm btn-red' : 'btn-sm btn-green';
+
+      const phase = document.getElementById('ap-phase');
+      phase.textContent = status.phase.toUpperCase();
+      phase.className = `ap-phase ${status.phase}`;
+
+      document.getElementById('ap-hunt-count').textContent = `${status.huntCount} hunts`;
+      document.getElementById('ap-interval').textContent = formatMs(status.currentIntervalMs);
+      document.getElementById('ap-next').textContent = status.nextHuntAt ? new Date(status.nextHuntAt).toLocaleTimeString('en', {hour12:false}) : '—';
+      document.getElementById('ap-confidence').textContent = status.lastConfidence !== null ? `${status.lastConfidence.toFixed(1)}%` : '—';
+      document.getElementById('ap-topic').textContent = String(status.topicIndex);
+    }
+
+    function addApTimeline(msg) {
+      apTimelineItems.unshift(msg);
+      if (apTimelineItems.length > 20) apTimelineItems.pop();
+      const el = document.getElementById('ap-timeline');
+      el.innerHTML = apTimelineItems.map(m =>
+        `<div class="ap-timeline-item"><span>${m.text}</span><span style="color:var(--text3)">${m.time}</span></div>`
+      ).join('');
+    }
+
+    async function toggleAutopilot() {
+      if (autopilotRunning) {
+        await fetch('/autopilot/stop', { method: 'POST' });
+        if (apSSE) { apSSE.close(); apSSE = null; }
+        addApTimeline({ text: 'Autopilot stopped', time: new Date().toLocaleTimeString('en', {hour12:false}) });
+      } else {
+        await fetch('/autopilot/start', { method: 'POST' });
+        connectAutopilotSSE();
+        addApTimeline({ text: 'Autopilot started', time: new Date().toLocaleTimeString('en', {hour12:false}) });
+      }
+      const r = await fetch('/autopilot/status');
+      updateApUI(await r.json());
+    }
+
+    function connectAutopilotSSE() {
+      if (apSSE) apSSE.close();
+      apSSE = new EventSource('/autopilot/stream');
+
+      apSSE.addEventListener('status', e => updateApUI(JSON.parse(e.data)));
+      apSSE.addEventListener('autopilot:phase', e => {
+        const d = JSON.parse(e.data);
+        const phase = document.getElementById('ap-phase');
+        phase.textContent = d.phase.toUpperCase();
+        phase.className = `ap-phase ${d.phase}`;
+      });
+      apSSE.addEventListener('autopilot:hunting', e => {
+        const d = JSON.parse(e.data);
+        addApTimeline({ text: `Hunting: ${d.topic}`, time: new Date().toLocaleTimeString('en', {hour12:false}) });
+      });
+      apSSE.addEventListener('autopilot:result', e => {
+        const d = JSON.parse(e.data);
+        addApTimeline({ text: `Result: ${d.confidence.toFixed(1)}% — ${d.recommendation.slice(0,40)}`, time: new Date().toLocaleTimeString('en', {hour12:false}) });
+        loadCircuits();
+        loadMemory();
+        loadReports();
+        loadReputation();
+      });
+      apSSE.addEventListener('autopilot:adapted', e => {
+        const d = JSON.parse(e.data);
+        addApTimeline({ text: `Adapted: ${formatMs(d.oldIntervalMs)} → ${formatMs(d.newIntervalMs)} (${d.reason})`, time: new Date().toLocaleTimeString('en', {hour12:false}) });
+      });
+      apSSE.addEventListener('autopilot:scheduled', e => {
+        const d = JSON.parse(e.data);
+        document.getElementById('ap-next').textContent = new Date(d.nextHuntAt).toLocaleTimeString('en', {hour12:false});
+        document.getElementById('ap-interval').textContent = formatMs(d.intervalMs);
+      });
+      apSSE.addEventListener('autopilot:stopped', () => {
+        autopilotRunning = false;
+        const btn = document.getElementById('ap-start-btn');
+        btn.textContent = 'Start Autopilot';
+        btn.className = 'btn-sm btn-green';
+        document.getElementById('ap-phase').textContent = 'IDLE';
+        document.getElementById('ap-phase').className = 'ap-phase idle';
+      });
+      apSSE.onerror = () => {};
+    }
+
+    async function loadAutopilot() {
+      try {
+        const r = await fetch('/autopilot/status');
+        const d = await r.json();
+        updateApUI(d);
+        if (d.running && !apSSE) connectAutopilotSSE();
+      } catch(e) {}
+    }
+
+    // ─── Memory ────────────────────────────────────────────────────────────
+
+    function renderPatterns(patterns, elId, cls) {
+      const el = document.getElementById(elId);
+      if (!patterns || !patterns.length) {
+        el.innerHTML = '<div style="color:var(--text3);font-size:.7rem;">No patterns yet</div>';
+        return;
+      }
+      el.innerHTML = patterns.map(p => `
+        <div class="pattern-item">
+          <span class="pattern-combo" title="${p.combo}">${p.combo}</span>
+          <span class="pattern-acc ${cls}">${(p.accuracy * 100).toFixed(0)}%</span>
+          <span class="pattern-adj">${p.adjustment > 0 ? '+' : ''}${p.adjustment}</span>
+        </div>
+      `).join('');
+    }
+
+    async function loadMemory() {
+      try {
+        const r = await fetch('/memory/stats');
+        const d = await r.json();
+        document.getElementById('mem-entries').textContent = d.totalEntries;
+        document.getElementById('mem-verified').textContent = d.verifiedEntries;
+        document.getElementById('mem-patterns').textContent = d.patterns;
+        document.getElementById('mem-active').textContent = d.activePatterns;
+        renderPatterns(d.topPatterns, 'mem-top', 'good');
+        renderPatterns(d.weakPatterns, 'mem-weak', 'weak');
+      } catch(e) {}
+    }
+
+    // ─── Telegram ──────────────────────────────────────────────────────────
+
+    async function loadTelegram() {
+      try {
+        const r = await fetch('/telegram/status');
+        const d = await r.json();
+        const badge = document.getElementById('tg-badge');
+        if (d.enabled) {
+          badge.className = 'tg-badge tg-on';
+          badge.textContent = 'TG ON';
+          badge.title = `Telegram Bot · Threshold: ${d.alertThreshold}%`;
+        } else {
+          badge.className = 'tg-badge tg-off';
+          badge.textContent = 'TG OFF';
+          badge.title = 'Telegram Bot (not configured)';
+        }
+      } catch(e) {}
+    }
+
     // ─── Init ─────────────────────────────────────────────────────────────────
 
     function restartCountdown() {
@@ -1622,7 +2035,7 @@
     }
 
     async function pollStatus() {
-      await Promise.all([loadServices(), loadReports(), loadReputation()]);
+      await Promise.all([loadServices(), loadReports(), loadReputation(), loadCircuits(), loadMemory(), loadAutopilot(), loadTelegram()]);
       restartCountdown();
     }
 

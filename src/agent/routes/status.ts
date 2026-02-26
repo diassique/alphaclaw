@@ -3,8 +3,13 @@ import { walletClient } from "../wallet.js";
 import { reportCache } from "../report-cache.js";
 import { serviceUrl, SERVICE_DEFS, getAllDynamicPrices } from "../../config/services.js";
 import { config } from "../../config/env.js";
+import { getCircuitSnapshot } from "../circuit-breaker.js";
 
 export function registerStatusRoutes(app: Application): void {
+  app.get("/circuits", (_req, res) => {
+    res.json(getCircuitSnapshot());
+  });
+
   app.get("/ping", (_req, res) => {
     const dp = getAllDynamicPrices();
     const totalBuy = dp.reduce((s, p) => s + parseFloat(p.effectivePrice.replace("$", "")), 0);

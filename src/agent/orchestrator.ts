@@ -2,6 +2,7 @@ import { x402Fetch } from "./wallet.js";
 import { serviceUrl, getEffectivePrice } from "../config/services.js";
 import { getReputation } from "./reputation.js";
 import { createLogger } from "../lib/logger.js";
+import { guardedCall } from "./circuit-breaker.js";
 import type { ServiceResponse, SettledResult, CompetitionResult } from "../types/index.js";
 
 const log = createLogger("coordinator");
@@ -67,15 +68,15 @@ export async function callAllServices(topic: string, signal?: AbortSignal): Prom
   const warnings: string[] = [];
 
   const [newsR, sentimentR, sentiment2R, polymarketR, defiR, whaleR] = await Promise.allSettled([
-    callNews(topic, signal),
-    callSentiment(topic, signal),
-    callSentiment2(topic, signal),
-    callPolymarket(topic, signal),
-    callDefi(topic, signal),
-    callWhale(undefined, signal),
+    guardedCall("news", () => callNews(topic, signal)),
+    guardedCall("sentiment", () => callSentiment(topic, signal)),
+    guardedCall("sentiment2", () => callSentiment2(topic, signal)),
+    guardedCall("polymarket", () => callPolymarket(topic, signal)),
+    guardedCall("defi", () => callDefi(topic, signal)),
+    guardedCall("whale", () => callWhale(undefined, signal)),
   ]);
 
-  function unwrap(r: PromiseSettledResult<ServiceResponse>, name: string): ServiceResponse | null {
+  function unwrap(r: PromiseSettledResult<ServiceResponse | null>, name: string): ServiceResponse | null {
     if (r.status === "fulfilled") return r.value;
     const reason = r.reason instanceof Error ? r.reason.message : String(r.reason);
     const warning = reason.includes("abort") ? `${name}: timeout after ${SUB_CALL_TIMEOUT / 1000}s` : `${name}: ${reason}`;

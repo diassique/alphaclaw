@@ -14,8 +14,13 @@ import { registerStreamRoutes } from "./routes/stream.js";
 import { registerReportRoutes } from "./routes/reports.js";
 import { registerStatusRoutes } from "./routes/status.js";
 import { registerReputationRoutes } from "./routes/reputation.js";
+import { registerAutopilotRoutes } from "./routes/autopilot.js";
+import { registerMemoryRoutes } from "./routes/memory.js";
+import { registerTelegramRoutes } from "./routes/telegram.js";
 import { getReputation } from "./reputation.js";
 import { setReputationProvider } from "../config/services.js";
+import { loadMemory } from "./memory.js";
+import { initTelegram } from "./telegram.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -61,11 +66,17 @@ app.get("/", (_req, res) => {
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
+// Load persistent state
+loadMemory();
+
 registerHuntRoutes(app);
 registerStreamRoutes(app);
 registerReportRoutes(app);
 registerStatusRoutes(app);
 registerReputationRoutes(app);
+registerAutopilotRoutes(app);
+registerMemoryRoutes(app);
+registerTelegramRoutes(app);
 
 // ─── Health ──────────────────────────────────────────────────────────────────
 
@@ -95,6 +106,7 @@ const server = app.listen(port, "0.0.0.0", () => {
     buyCost: "$0.039",
     sellPrice: "$0.050",
   });
+  initTelegram();
 });
 
 // Graceful shutdown
