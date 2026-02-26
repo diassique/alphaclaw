@@ -1,4 +1,5 @@
 import { config } from "./env.js";
+import type { ServiceKey, DynamicPrice } from "../types/index.js";
 
 export interface ServiceDef {
   key: string;
@@ -23,6 +24,17 @@ export const SERVICE_DEFS: Record<string, ServiceDef> = {
     price: "$0.001",
     description: "Crypto market sentiment analysis — bullish/bearish signals from text",
     entryFile: "src/services/sentiment/index.ts",
+  },
+  sentiment2: {
+    key: "sentiment2",
+    logName: "sentiment-v2",
+    displayName: "crypto-sentiment-v2",
+    port: config.ports.sentiment2,
+    endpoint: "/analyze",
+    method: "POST",
+    price: "$0.001",
+    description: "Conservative crypto sentiment analysis — competing agent with bearish bias",
+    entryFile: "src/services/sentiment-v2/index.ts",
   },
   polymarket: {
     key: "polymarket",
@@ -85,4 +97,35 @@ export function serviceUrl(key: string): string {
   const def = SERVICE_DEFS[key];
   if (!def) throw new Error(`Unknown service: ${key}`);
   return `http://localhost:${def.port}`;
+}
+
+// Lazy import to avoid circular dependency (reputation imports types, services imports config)
+let _getRepScore: ((key: ServiceKey) => number) | null = null;
+
+export function setReputationProvider(fn: (key: ServiceKey) => number): void {
+  _getRepScore = fn;
+}
+
+function parsePrice(p: string): number {
+  return parseFloat(p.replace("$", ""));
+}
+
+export function getEffectivePrice(key: ServiceKey): DynamicPrice {
+  const def = SERVICE_DEFS[key];
+  const baseNum = def ? parsePrice(def.price) : 0;
+  const rep = _getRepScore ? _getRepScore(key) : 0.5;
+  const multiplier = parseFloat((0.5 + rep).toFixed(3));
+  const effective = parseFloat((baseNum * multiplier).toFixed(4));
+  return {
+    service: key,
+    basePrice: def?.price ?? "$0",
+    effectivePrice: `$${effective}`,
+    multiplier,
+    reputation: parseFloat(rep.toFixed(3)),
+  };
+}
+
+export function getAllDynamicPrices(): DynamicPrice[] {
+  const keys: ServiceKey[] = ["sentiment", "sentiment2", "polymarket", "defi", "news", "whale"];
+  return keys.map(getEffectivePrice);
 }

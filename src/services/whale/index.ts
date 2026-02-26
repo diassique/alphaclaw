@@ -230,7 +230,12 @@ app.post("/whale", async (req, res) => {
 
     const signal = whaleCount >= 2 ? "ACCUMULATION" : whaleCount === 1 ? "WATCH" : "QUIET";
 
-    log.info("whale", { address: address.slice(0, 10), movements: limited.length, whaleCount, signal, cached });
+    // Confidence staking score
+    const volScore = Math.min(totalVolumeUSD / 10_000, 1);
+    const confidenceScore = Math.min(1, Math.min(whaleCount / 3, 1) * 0.4 + volScore * 0.3 + Math.min(limited.length / 5, 1) * 0.15 + (cached ? 0 : 0.15));
+    const confidenceBasis = `${whaleCount} whales, $${totalVolumeUSD.toFixed(0)} volume, ${limited.length} moves`;
+
+    log.info("whale", { address: address.slice(0, 10), movements: limited.length, whaleCount, signal, cached, confidenceScore: confidenceScore.toFixed(3) });
 
     res.json({
       service: "whale-agent",
@@ -241,6 +246,8 @@ app.post("/whale", async (req, res) => {
         whaleCount,
         totalVolumeUSD: `$${totalVolumeUSD.toFixed(2)}`,
         signal,
+        confidenceScore: parseFloat(confidenceScore.toFixed(3)),
+        confidenceBasis,
         source: "viem-rpc",
       },
       ...(cached ? { cached: true, cacheAge } : {}),

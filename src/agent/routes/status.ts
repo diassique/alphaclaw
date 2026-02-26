@@ -1,30 +1,34 @@
 import type { Application } from "express";
 import { walletClient } from "../wallet.js";
 import { reportCache } from "../report-cache.js";
-import { serviceUrl, SERVICE_DEFS } from "../../config/services.js";
+import { serviceUrl, SERVICE_DEFS, getAllDynamicPrices } from "../../config/services.js";
 import { config } from "../../config/env.js";
 
 export function registerStatusRoutes(app: Application): void {
   app.get("/ping", (_req, res) => {
+    const dp = getAllDynamicPrices();
+    const totalBuy = dp.reduce((s, p) => s + parseFloat(p.effectivePrice.replace("$", "")), 0);
+
     res.json({
       service: "alphaclaw-coordinator",
       status: "hunting",
       walletConnected: !!walletClient,
       role: "BUYER + SELLER (full x402 cycle)",
       buysFrom: [
-        { service: "news-agent",               url: `${serviceUrl("news")}/news`,              price: "$0.001" },
-        { service: "crypto-sentiment",         url: `${serviceUrl("sentiment")}/analyze`,       price: "$0.001" },
-        { service: "polymarket-alpha-scanner", url: `${serviceUrl("polymarket")}/scan`,         price: "$0.020" },
-        { service: "defi-alpha-scanner",       url: `${serviceUrl("defi")}/scan`,               price: "$0.015" },
-        { service: "whale-agent",              url: `${serviceUrl("whale")}/whale`,              price: "$0.002" },
+        { service: "news-agent",               url: `${serviceUrl("news")}/news`,              price: dp.find(p => p.service === "news")?.effectivePrice },
+        { service: "crypto-sentiment",         url: `${serviceUrl("sentiment")}/analyze`,       price: dp.find(p => p.service === "sentiment")?.effectivePrice },
+        { service: "polymarket-alpha-scanner", url: `${serviceUrl("polymarket")}/scan`,         price: dp.find(p => p.service === "polymarket")?.effectivePrice },
+        { service: "defi-alpha-scanner",       url: `${serviceUrl("defi")}/scan`,               price: dp.find(p => p.service === "defi")?.effectivePrice },
+        { service: "whale-agent",              url: `${serviceUrl("whale")}/whale`,              price: dp.find(p => p.service === "whale")?.effectivePrice },
       ],
+      dynamicPricing: dp,
       sellsAt: [
         { endpoint: "POST /hunt",       price: "$0.050", description: "Full 5-source alpha hunt" },
         { endpoint: "GET /report/:id",  price: "$0.010", description: "Cached synthesized report" },
       ],
-      totalBuyCost: "$0.039",
+      totalBuyCost: `$${totalBuy.toFixed(4)}`,
       sellPriceFull: "$0.050",
-      margin: "$0.011 per hunt",
+      margin: `$${(0.05 - totalBuy).toFixed(4)} per hunt`,
       cachedReports: reportCache.size,
     });
   });
@@ -57,6 +61,7 @@ export function registerStatusRoutes(app: Application): void {
       probe("alphaclaw-coordinator",      `http://localhost:${port}/health`,              port),
       probe("news-agent",                 `${serviceUrl("news")}/health`,        config.ports.news,        SERVICE_DEFS["news"]!.price),
       probe("crypto-sentiment",           `${serviceUrl("sentiment")}/health`,   config.ports.sentiment,   SERVICE_DEFS["sentiment"]!.price),
+      probe("crypto-sentiment-v2",        `${serviceUrl("sentiment2")}/health`,  config.ports.sentiment2,  SERVICE_DEFS["sentiment2"]!.price),
       probe("polymarket-alpha-scanner",   `${serviceUrl("polymarket")}/health`,  config.ports.polymarket,  SERVICE_DEFS["polymarket"]!.price),
       probe("defi-alpha-scanner",         `${serviceUrl("defi")}/health`,        config.ports.defi,        SERVICE_DEFS["defi"]!.price),
       probe("whale-agent",                `${serviceUrl("whale")}/health`,       config.ports.whale,       SERVICE_DEFS["whale"]!.price),

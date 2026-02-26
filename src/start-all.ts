@@ -9,7 +9,7 @@ const projectRoot = join(__dirname, "..");
 // tsx binary (installed as devDependency)
 const tsx = join(projectRoot, "node_modules", ".bin", "tsx");
 
-const serviceOrder = ["sentiment", "polymarket", "defi", "news", "whale", "hunter"] as const;
+const serviceOrder = ["sentiment", "sentiment2", "polymarket", "defi", "news", "whale", "hunter"] as const;
 
 console.log("\n  ⚡  AlphaClaw — starting all services\n");
 
@@ -34,6 +34,7 @@ for (const key of serviceOrder) {
 
 console.log("  Services starting on:");
 console.log("    4001 — Sentiment Analysis      ($0.001)");
+console.log("    4006 — Sentiment V2 (rival)    ($0.001)");
 console.log("    4002 — Polymarket Scanner      ($0.020)");
 console.log("    4003 — DeFi Scanner            ($0.015)");
 console.log("    4004 — News Agent              ($0.001)");

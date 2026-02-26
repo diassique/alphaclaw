@@ -13,8 +13,14 @@ import { registerHuntRoutes } from "./routes/hunt.js";
 import { registerStreamRoutes } from "./routes/stream.js";
 import { registerReportRoutes } from "./routes/reports.js";
 import { registerStatusRoutes } from "./routes/status.js";
+import { registerReputationRoutes } from "./routes/reputation.js";
+import { getReputation } from "./reputation.js";
+import { setReputationProvider } from "../config/services.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Wire reputation into dynamic pricing
+setReputationProvider((key) => getReputation(key).score);
 const log = createLogger("coordinator");
 const port = config.ports.agent;
 
@@ -42,6 +48,12 @@ conditionalPaywall(app, config.walletAddress, {
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
+app.get("/logo.svg", (_req, res) => {
+  res.setHeader("Content-Type", "image/svg+xml");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(readFileSync(join(__dirname, "../../claw.svg")));
+});
+
 app.get("/", (_req, res) => {
   res.setHeader("Content-Type", "text/html");
   res.send(readFileSync(join(__dirname, "dashboard.html")));
@@ -53,6 +65,7 @@ registerHuntRoutes(app);
 registerStreamRoutes(app);
 registerReportRoutes(app);
 registerStatusRoutes(app);
+registerReputationRoutes(app);
 
 // ─── Health ──────────────────────────────────────────────────────────────────
 

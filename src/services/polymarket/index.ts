@@ -119,8 +119,14 @@ app.post("/scan", async (req, res) => {
 
     const topSignal = opportunities[0]?.alphaSignal ?? "NONE";
     const highCount = opportunities.filter((o) => o.alphaSignal === "HIGH").length;
+    const hasVolume = opportunities.some((o) => o.volume24h > 0);
 
-    log.info("scan", { total: opportunities.length, highCount, cached });
+    // Confidence staking score
+    const highRatio = opportunities.length > 0 ? highCount / opportunities.length : 0;
+    const confidenceScore = Math.min(1, highRatio * 0.5 + (hasVolume ? 0.2 : 0) + (cached ? 0 : 0.15) + Math.min(opportunities.length / 20, 1) * 0.15);
+    const confidenceBasis = `${highCount} HIGH signals, ${opportunities.length} markets, ${cached ? "cached" : "fresh"}`;
+
+    log.info("scan", { total: opportunities.length, highCount, cached, confidenceScore: confidenceScore.toFixed(3) });
 
     res.json({
       service: "polymarket-alpha-scanner",
@@ -130,6 +136,8 @@ app.post("/scan", async (req, res) => {
         total: opportunities.length,
         topSignal,
         highSignalCount: highCount,
+        confidenceScore: parseFloat(confidenceScore.toFixed(3)),
+        confidenceBasis,
         summary: `Found ${highCount} HIGH-alpha markets out of ${opportunities.length} scanned`,
       },
       ...(cached ? { cached: true, cacheAge } : {}),

@@ -95,7 +95,14 @@ app.post("/news", async (req, res) => {
   try {
     const { articles, cached, cacheAge } = await fetchCryptoPanic(topic, limit);
 
-    log.info("news", { topic, count: articles.length, cached });
+    // Confidence staking score
+    const recencyBonus = articles.length > 0 && articles[0]
+      ? Math.max(0, 1 - (Date.now() - new Date(articles[0].publishedAt).getTime()) / 3_600_000)
+      : 0;
+    const confidenceScore = Math.min(1, Math.min(articles.length / 5, 1) * 0.6 + recencyBonus * 0.25 + (cached ? 0 : 0.15));
+    const confidenceBasis = `${articles.length} articles, recency ${recencyBonus.toFixed(2)}, ${cached ? "cached" : "fresh"}`;
+
+    log.info("news", { topic, count: articles.length, cached, confidenceScore: confidenceScore.toFixed(3) });
 
     res.json({
       service: "news-agent",
@@ -104,6 +111,8 @@ app.post("/news", async (req, res) => {
         topic,
         articles,
         count: articles.length,
+        confidenceScore: parseFloat(confidenceScore.toFixed(3)),
+        confidenceBasis,
         source: "cryptopanic",
       },
       ...(cached ? { cached: true, cacheAge } : {}),

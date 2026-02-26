@@ -135,7 +135,12 @@ app.post("/scan", async (req, res) => {
     const topOpportunity = opportunities[0] ?? null;
     const hotCount = opportunities.filter((o) => o.alphaLevel === "HOT").length;
 
-    log.info("scan", { category, total: opportunities.length, hotCount, cached });
+    // Confidence staking score
+    const topScore = topOpportunity ? Math.min(topOpportunity.alphaScore / 10, 1) : 0;
+    const confidenceScore = Math.min(1, topScore * 0.5 + Math.min(hotCount / 3, 1) * 0.3 + (cached ? 0 : 0.2));
+    const confidenceBasis = `top alpha ${topOpportunity?.alphaScore ?? 0}/10, ${hotCount} HOT, ${cached ? "cached" : "fresh"}`;
+
+    log.info("scan", { category, total: opportunities.length, hotCount, cached, confidenceScore: confidenceScore.toFixed(3) });
 
     res.json({
       service: "defi-alpha-scanner",
@@ -145,6 +150,8 @@ app.post("/scan", async (req, res) => {
         total: opportunities.length,
         topOpportunity,
         hotCount,
+        confidenceScore: parseFloat(confidenceScore.toFixed(3)),
+        confidenceBasis,
         summary: topOpportunity
           ? `Top pick: ${topOpportunity.symbol} (${topOpportunity.alphaLevel}) — ${topOpportunity.suggestedAction}`
           : "No significant opportunities detected",

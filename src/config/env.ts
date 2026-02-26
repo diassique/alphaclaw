@@ -12,6 +12,7 @@ export interface AppConfig {
   baseRpcUrl: string;
   ports: {
     sentiment: number;
+    sentiment2: number;
     polymarket: number;
     defi: number;
     news: number;
@@ -41,6 +42,7 @@ export const config: AppConfig = Object.freeze({
   baseRpcUrl: env("BASE_RPC_URL", "https://sepolia.base.org"),
   ports: Object.freeze({
     sentiment: envInt("PORT_SENTIMENT", 4001),
+    sentiment2: envInt("PORT_SENTIMENT2", 4006),
     polymarket: envInt("PORT_POLYMARKET", 4002),
     defi: envInt("PORT_DEFI", 4003),
     news: envInt("PORT_NEWS", 4004),

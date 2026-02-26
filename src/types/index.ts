@@ -1,3 +1,64 @@
+// ─── Service Keys ───────────────────────────────────────────────────────────
+
+export type ServiceKey = "sentiment" | "sentiment2" | "polymarket" | "defi" | "news" | "whale";
+
+// ─── Confidence Staking ─────────────────────────────────────────────────────
+
+export interface ConfidencePayload {
+  confidenceScore: number; // 0.0–1.0
+  confidenceBasis: string;
+}
+
+export type Direction = "bullish" | "bearish" | "neutral";
+
+export interface AgentReputation {
+  key: ServiceKey;
+  score: number;           // 0.0–1.0
+  hunts: number;
+  correct: number;
+  pnl: number;             // cumulative P&L from staking
+  history: number[];        // ring buffer of recent scores
+}
+
+export interface StakeResult {
+  service: ServiceKey;
+  confidence: number;
+  direction: Direction;
+  staked: number;
+  returned: number;
+  reputationBefore: number;
+  reputationAfter: number;
+  correct: boolean;
+}
+
+export interface StakingSummary {
+  huntId: string;
+  consensus: Direction;
+  results: StakeResult[];
+  totalStaked: number;
+  totalReturned: number;
+}
+
+export interface ReputationSnapshot {
+  [key: string]: { score: number; hunts: number; correct: number; pnl: number };
+}
+
+export interface DynamicPrice {
+  service: ServiceKey;
+  basePrice: string;
+  effectivePrice: string;
+  multiplier: number;
+  reputation: number;
+}
+
+export interface CompetitionResult {
+  winner: ServiceKey;
+  loser: ServiceKey;
+  winnerRatio: number;
+  loserRatio: number;
+  reason: string;
+}
+
 // ─── Sentiment ──────────────────────────────────────────────────────────────
 
 export type SentimentLabel = "strongly_bullish" | "bullish" | "neutral" | "bearish" | "strongly_bearish";
@@ -180,9 +241,14 @@ export interface PaymentLog {
 
 export interface AlphaSynthesis {
   confidence: string;
+  weightedConfidence: number;
   recommendation: string;
   signals: string[];
   warnings?: string[];
+  stakingSummary: StakingSummary;
+  reputationSnapshot: ReputationSnapshot;
+  dynamicPricing: DynamicPrice[];
+  competitionResult?: CompetitionResult;
   breakdown: {
     sentiment: Pick<SentimentResult, "label" | "score" | "confidence"> | null;
     polymarket: { market: string; signal: string; yesPrice: number } | null;
@@ -199,6 +265,7 @@ export interface CachedReport {
   createdAt: number;
   alpha: AlphaSynthesis;
   agentPayments: PaymentLog;
+  stakingSummary: StakingSummary;
   preview: string;
 }
 
@@ -209,4 +276,5 @@ export interface SettledResult {
   defi: ServiceResponse | null;
   whale: ServiceResponse | null;
   warnings: string[];
+  competitionResult?: CompetitionResult;
 }

@@ -1,20 +1,30 @@
 import { x402Fetch } from "./wallet.js";
-import { serviceUrl } from "../config/services.js";
+import { serviceUrl, getEffectivePrice } from "../config/services.js";
+import { getReputation } from "./reputation.js";
 import { createLogger } from "../lib/logger.js";
-import type { ServiceResponse, SettledResult } from "../types/index.js";
+import type { ServiceResponse, SettledResult, CompetitionResult } from "../types/index.js";
 
 const log = createLogger("coordinator");
 
 const SUB_CALL_TIMEOUT = 15_000;
 
-const SENTIMENT_URL  = serviceUrl("sentiment");
-const POLYMARKET_URL = serviceUrl("polymarket");
-const DEFI_URL       = serviceUrl("defi");
-const NEWS_URL       = serviceUrl("news");
-const WHALE_URL      = serviceUrl("whale");
+const SENTIMENT_URL   = serviceUrl("sentiment");
+const SENTIMENT2_URL  = serviceUrl("sentiment2");
+const POLYMARKET_URL  = serviceUrl("polymarket");
+const DEFI_URL        = serviceUrl("defi");
+const NEWS_URL        = serviceUrl("news");
+const WHALE_URL       = serviceUrl("whale");
 
 export async function callSentiment(text: string, signal?: AbortSignal): Promise<ServiceResponse> {
   return x402Fetch(`${SENTIMENT_URL}/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  }, SUB_CALL_TIMEOUT, signal) as Promise<ServiceResponse>;
+}
+
+export async function callSentiment2(text: string, signal?: AbortSignal): Promise<ServiceResponse> {
+  return x402Fetch(`${SENTIMENT2_URL}/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
@@ -56,9 +66,10 @@ export async function callWhale(address?: string, signal?: AbortSignal): Promise
 export async function callAllServices(topic: string, signal?: AbortSignal): Promise<SettledResult> {
   const warnings: string[] = [];
 
-  const [newsR, sentimentR, polymarketR, defiR, whaleR] = await Promise.allSettled([
+  const [newsR, sentimentR, sentiment2R, polymarketR, defiR, whaleR] = await Promise.allSettled([
     callNews(topic, signal),
     callSentiment(topic, signal),
+    callSentiment2(topic, signal),
     callPolymarket(topic, signal),
     callDefi(topic, signal),
     callWhale(undefined, signal),
@@ -73,12 +84,57 @@ export async function callAllServices(topic: string, signal?: AbortSignal): Prom
     return null;
   }
 
+  const sent1 = unwrap(sentimentR, "sentiment");
+  const sent2 = unwrap(sentiment2R, "sentiment2");
+
+  // Competition: pick winner by reputation / effectivePrice ratio
+  let competitionResult: CompetitionResult | undefined;
+  let winnerSentiment = sent1;
+
+  const rep1 = getReputation("sentiment").score;
+  const rep2 = getReputation("sentiment2").score;
+  const price1 = parseFloat(getEffectivePrice("sentiment").effectivePrice.replace("$", "")) || 0.001;
+  const price2 = parseFloat(getEffectivePrice("sentiment2").effectivePrice.replace("$", "")) || 0.001;
+  const ratio1 = rep1 / price1;
+  const ratio2 = rep2 / price2;
+
+  if (sent1 && sent2) {
+    if (ratio2 > ratio1) {
+      winnerSentiment = sent2;
+      competitionResult = {
+        winner: "sentiment2",
+        loser: "sentiment",
+        winnerRatio: parseFloat(ratio2.toFixed(1)),
+        loserRatio: parseFloat(ratio1.toFixed(1)),
+        reason: `sentiment-v2 (conservative) wins: ${ratio2.toFixed(1)} vs ${ratio1.toFixed(1)} rep/price ratio`,
+      };
+      log.info("competition", { winner: "sentiment2", ratio2: ratio2.toFixed(1), ratio1: ratio1.toFixed(1) });
+    } else {
+      competitionResult = {
+        winner: "sentiment",
+        loser: "sentiment2",
+        winnerRatio: parseFloat(ratio1.toFixed(1)),
+        loserRatio: parseFloat(ratio2.toFixed(1)),
+        reason: `sentiment-v1 wins: ${ratio1.toFixed(1)} vs ${ratio2.toFixed(1)} rep/price ratio`,
+      };
+      log.info("competition", { winner: "sentiment", ratio1: ratio1.toFixed(1), ratio2: ratio2.toFixed(1) });
+    }
+  } else if (sent2 && !sent1) {
+    winnerSentiment = sent2;
+    competitionResult = {
+      winner: "sentiment2", loser: "sentiment",
+      winnerRatio: parseFloat(ratio2.toFixed(1)), loserRatio: 0,
+      reason: "sentiment-v1 offline — sentiment-v2 wins by default",
+    };
+  }
+
   return {
     news: unwrap(newsR, "news"),
-    sentiment: unwrap(sentimentR, "sentiment"),
+    sentiment: winnerSentiment,
     polymarket: unwrap(polymarketR, "polymarket"),
     defi: unwrap(defiR, "defi"),
     whale: unwrap(whaleR, "whale"),
     warnings,
+    competitionResult,
   };
 }
