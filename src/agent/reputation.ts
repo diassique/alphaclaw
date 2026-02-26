@@ -1,3 +1,4 @@
+import { createStore } from "../lib/store.js";
 import type {
   ServiceKey,
   Direction,
@@ -23,7 +24,56 @@ const SLASH_RATE = 0.5;
 const REWARD_RATE = 0.3;
 const HISTORY_SIZE = 20;
 
-const ALL_KEYS: ServiceKey[] = ["sentiment", "sentiment2", "polymarket", "defi", "news", "whale"];
+import { BUILTIN_KEYS } from "../types/index.js";
+
+const STATIC_KEYS: readonly string[] = BUILTIN_KEYS;
+
+// Dynamic key provider — set via setRegistryKeyProvider() after registry loads
+let _getAllKeys: (() => string[]) | null = null;
+
+export function setRegistryKeyProvider(fn: () => string[]): void {
+  _getAllKeys = fn;
+}
+
+function getAllKeys(): string[] {
+  if (_getAllKeys) return _getAllKeys();
+  return [...STATIC_KEYS];
+}
+
+// ─── Persistence ────────────────────────────────────────────────────────────
+
+interface ReputationData {
+  version: number;
+  agents: Record<string, AgentReputation>;
+}
+
+function validateReputation(raw: unknown): ReputationData {
+  const d = raw as ReputationData;
+  if (!d || typeof d !== "object" || !d.agents) return { version: 1, agents: {} };
+  // Clamp scores and ensure numeric fields
+  for (const agent of Object.values(d.agents)) {
+    agent.score = Math.max(0.05, Math.min(1.0, Number(agent.score) || INITIAL_REPUTATION));
+    agent.hunts = Math.max(0, Math.floor(Number(agent.hunts) || 0));
+    agent.correct = Math.max(0, Math.floor(Number(agent.correct) || 0));
+    agent.pnl = Number(agent.pnl) || 0;
+    if (!Array.isArray(agent.history)) agent.history = [];
+    agent.history = agent.history.slice(-HISTORY_SIZE).map(Number).filter(n => !isNaN(n));
+  }
+  return { version: 1, agents: d.agents };
+}
+
+const store = createStore<ReputationData>({
+  filename: "reputation.json",
+  defaultValue: { version: 1, agents: {} },
+  validate: validateReputation,
+  debounceMs: 5000,
+});
+
+function saveToStore(): void {
+  const data: ReputationData = { version: 1, agents: {} };
+  for (const [key, rep] of reputations) data.agents[key] = rep;
+  store.set(data);
+}
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -33,21 +83,39 @@ function initAgent(key: ServiceKey): AgentReputation {
   return { key, score: INITIAL_REPUTATION, hunts: 0, correct: 0, pnl: 0, history: [] };
 }
 
-for (const k of ALL_KEYS) reputations.set(k, initAgent(k));
+for (const k of STATIC_KEYS) reputations.set(k, initAgent(k));
+
+/** Load persisted reputations from disk. Call once at startup. */
+export function loadReputation(): void {
+  store.load();
+  const data = store.get();
+  for (const k of getAllKeys()) {
+    const saved = data.agents[k];
+    if (saved) {
+      saved.key = k; // ensure key matches
+      reputations.set(k, saved);
+    }
+  }
+}
 
 // ─── Getters ────────────────────────────────────────────────────────────────
 
 export function getReputation(key: ServiceKey): AgentReputation {
-  return reputations.get(key) ?? initAgent(key);
+  let rep = reputations.get(key);
+  if (!rep) {
+    rep = initAgent(key);
+    reputations.set(key, rep);
+  }
+  return rep;
 }
 
 export function getAllReputations(): AgentReputation[] {
-  return ALL_KEYS.map(k => getReputation(k));
+  return getAllKeys().map(k => getReputation(k));
 }
 
 export function getReputationSnapshot(): ReputationSnapshot {
   const snap: ReputationSnapshot = {};
-  for (const k of ALL_KEYS) {
+  for (const k of getAllKeys()) {
     const r = getReputation(k);
     snap[k] = { score: parseFloat(r.score.toFixed(3)), hunts: r.hunts, correct: r.correct, pnl: parseFloat(r.pnl.toFixed(2)) };
   }
@@ -55,7 +123,8 @@ export function getReputationSnapshot(): ReputationSnapshot {
 }
 
 export function resetAllReputations(): void {
-  for (const k of ALL_KEYS) reputations.set(k, initAgent(k));
+  for (const k of getAllKeys()) reputations.set(k, initAgent(k));
+  saveToStore();
 }
 
 // ─── Direction extraction ───────────────────────────────────────────────────
@@ -96,8 +165,13 @@ export function extractDirection(key: ServiceKey, data: unknown): Direction {
       if (w.signal === "QUIET") return "bearish";
       return "neutral";
     }
-    default:
+    default: {
+      // External agents self-report direction in result
+      const ext = result as Record<string, unknown>;
+      const dir = ext["direction"];
+      if (dir === "bullish" || dir === "bearish" || dir === "neutral") return dir;
       return "neutral";
+    }
   }
 }
 
@@ -178,6 +252,8 @@ export function settleHunt(
     });
   }
 
+  saveToStore();
+
   return {
     huntId,
     consensus,
@@ -185,6 +261,32 @@ export function settleHunt(
     totalStaked: parseFloat(totalStaked.toFixed(2)),
     totalReturned: parseFloat(totalReturned.toFixed(2)),
   };
+}
+
+// ─── Settlement-based reputation update (real outcomes) ─────────────────────
+
+export function updateReputationFromSettlement(
+  serviceResults: { key: ServiceKey; direction: Direction; correct: boolean }[],
+): void {
+  for (const { key, correct } of serviceResults) {
+    const rep = reputations.get(key) ?? initAgent(key);
+
+    if (correct) {
+      rep.score = Math.min(1, rep.score * DECAY_FACTOR + CORRECT_REWARD);
+      rep.correct++;
+      rep.pnl += parseFloat((BASE_STAKE * REWARD_RATE * rep.score).toFixed(2));
+    } else {
+      rep.score = Math.max(0.05, rep.score * DECAY_FACTOR - INCORRECT_PENALTY);
+      rep.pnl -= parseFloat((BASE_STAKE * SLASH_RATE * rep.score).toFixed(2));
+    }
+
+    rep.hunts++;
+    rep.history.push(rep.score);
+    if (rep.history.length > HISTORY_SIZE) rep.history.shift();
+    reputations.set(key, rep);
+  }
+
+  saveToStore();
 }
 
 // ─── Confidence extraction helper ───────────────────────────────────────────

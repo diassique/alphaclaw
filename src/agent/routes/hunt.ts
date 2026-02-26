@@ -20,7 +20,7 @@ export function registerHuntRoutes(app: Application): void {
 
     const huntId = randomUUID().slice(0, 12);
     const ts = new Date().toISOString();
-    const { news, sentiment, polymarket, defi, whale, warnings, competitionResult } = await callAllServices(topic);
+    const { news, sentiment, polymarket, defi, whale, external, warnings, competitionResult } = await callAllServices(topic);
 
     log.info("hunt", { huntId, topic, warnings: warnings.length > 0 ? warnings : undefined });
 
@@ -33,20 +33,31 @@ export function registerHuntRoutes(app: Application): void {
       whaleResult:      whale?.data as { result?: WhaleResult } | null,
       warnings,
       competitionResult,
+      externalResults: external,
     });
 
     const dp = alpha.dynamicPricing;
     const priceOf = (svc: string) => dp.find(p => p.service === svc)?.effectivePrice ?? "?";
 
+    const builtinBreakdown = [
+      { service: "news-agent",                price: priceOf("news"),       paid: news?.paid ?? false,       txHash: news?.txHash },
+      { service: "crypto-sentiment",          price: priceOf("sentiment"),  paid: sentiment?.paid ?? false,  txHash: sentiment?.txHash },
+      { service: "polymarket-alpha-scanner",  price: priceOf("polymarket"), paid: polymarket?.paid ?? false, txHash: polymarket?.txHash },
+      { service: "defi-alpha-scanner",        price: priceOf("defi"),       paid: defi?.paid ?? false,       txHash: defi?.txHash },
+      { service: "whale-agent",               price: priceOf("whale"),      paid: whale?.paid ?? false,      txHash: whale?.txHash },
+    ];
+    for (const [key, resp] of Object.entries(external)) {
+      builtinBreakdown.push({
+        service: key,
+        price: priceOf(key),
+        paid: resp?.paid ?? false,
+        txHash: resp?.txHash,
+      });
+    }
+    const agentCount = 5 + Object.keys(external).length;
     const paymentLog: PaymentLog = {
-      totalPaid: walletClient ? `${dp.reduce((s, p) => s + parseFloat(p.effectivePrice.replace("$", "")), 0).toFixed(4)} USDC to 5 sub-agents (dynamic)` : "demo mode — no wallet",
-      breakdown: [
-        { service: "news-agent",                price: priceOf("news"),       paid: news?.paid ?? false,       txHash: news?.txHash },
-        { service: "crypto-sentiment",          price: priceOf("sentiment"),  paid: sentiment?.paid ?? false,  txHash: sentiment?.txHash },
-        { service: "polymarket-alpha-scanner",  price: priceOf("polymarket"), paid: polymarket?.paid ?? false, txHash: polymarket?.txHash },
-        { service: "defi-alpha-scanner",        price: priceOf("defi"),       paid: defi?.paid ?? false,       txHash: defi?.txHash },
-        { service: "whale-agent",               price: priceOf("whale"),      paid: whale?.paid ?? false,      txHash: whale?.txHash },
-      ],
+      totalPaid: walletClient ? `${dp.reduce((s, p) => s + parseFloat(p.effectivePrice.replace("$", "")), 0).toFixed(4)} USDC to ${agentCount} sub-agents (dynamic)` : "demo mode — no wallet",
+      breakdown: builtinBreakdown,
     };
 
     const reportId = generateReportId(topic, ts);

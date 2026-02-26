@@ -14,13 +14,18 @@ import { registerReputationRoutes } from "./routes/reputation.js";
 import { registerAutopilotRoutes } from "./routes/autopilot.js";
 import { registerMemoryRoutes } from "./routes/memory.js";
 import { registerTelegramRoutes } from "./routes/telegram.js";
+import { registerSettlementRoutes } from "./routes/settlement.js";
+import { registerLiveRoutes } from "./routes/live.js";
 import { registerPageRoutes } from "./routes/pages.js";
-import { getReputation, loadReputation } from "./reputation.js";
-import { setReputationProvider } from "../config/services.js";
+import { getReputation, loadReputation, setRegistryKeyProvider } from "./reputation.js";
+import { setReputationProvider, setRegistryProvider } from "../config/services.js";
+import { loadRegistry, startHealthChecks, stopHealthChecks, getAgent, getAllAgentKeys } from "./registry.js";
+import { registerRegistryRoutes } from "./routes/registry.js";
 import { loadMemory } from "./memory.js";
 import { loadCircuits } from "./circuit-breaker.js";
 import { loadReports } from "./report-cache.js";
 import { loadAutopilot, stopAutopilot } from "./autopilot.js";
+import { loadSettlements, startSettlementLoop, stopSettlementLoop } from "./settlement.js";
 import { flushAllStores, destroyAllStores } from "../lib/store.js";
 import { initTelegram } from "./telegram.js";
 
@@ -57,9 +62,18 @@ registerPageRoutes(app);
 
 loadMemory();
 loadReputation();
+loadRegistry();
+startHealthChecks();
+setRegistryKeyProvider(getAllAgentKeys);
+setRegistryProvider(
+  (key) => getAgent(key)?.price ?? null,
+  getAllAgentKeys,
+);
 loadCircuits();
 loadReports();
 loadAutopilot();
+loadSettlements();
+startSettlementLoop();
 setReputationProvider((key) => getReputation(key).score);
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
@@ -72,6 +86,9 @@ registerReputationRoutes(app);
 registerAutopilotRoutes(app);
 registerMemoryRoutes(app);
 registerTelegramRoutes(app);
+registerSettlementRoutes(app);
+registerLiveRoutes(app);
+registerRegistryRoutes(app);
 
 // ─── Health ──────────────────────────────────────────────────────────────────
 
@@ -104,10 +121,24 @@ const server = app.listen(port, "0.0.0.0", () => {
   initTelegram();
 });
 
-// Graceful shutdown
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    log.error(`port ${port} already in use — exiting`, { code: err.code });
+  } else {
+    log.error(`server error: ${err.message}`, { code: err.code });
+  }
+  process.exit(1);
+});
+
+// Graceful shutdown (idempotent)
+let shutdownCalled = false;
 const shutdown = (signal: string) => {
+  if (shutdownCalled) return;
+  shutdownCalled = true;
   log.info(`${signal} received — shutting down coordinator`);
+  stopSettlementLoop();
   stopAutopilot();
+  stopHealthChecks();
   flushAllStores();
   destroyAllStores();
   log.info("all stores flushed");
@@ -123,3 +154,12 @@ const shutdown = (signal: string) => {
 
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
+
+process.on("uncaughtException", (err) => {
+  log.error(`uncaught exception: ${err.message}`, { stack: err.stack });
+  shutdown("uncaughtException");
+});
+
+process.on("unhandledRejection", (reason) => {
+  log.error(`unhandled rejection: ${reason}`);
+});

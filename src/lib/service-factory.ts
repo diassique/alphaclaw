@@ -66,19 +66,31 @@ export function createService(opts: ServiceOpts): ServiceInstance {
     });
   });
 
+  let shutdownCalled = false;
+
   function start(): Server {
     const server = app.listen(opts.port, () => {
       log.info(`listening on http://localhost:${opts.port}`);
     });
 
-    // Graceful shutdown
+    server.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        log.error(`port ${opts.port} already in use — exiting`, { code: err.code });
+      } else {
+        log.error(`server error: ${err.message}`, { code: err.code });
+      }
+      process.exit(1);
+    });
+
+    // Graceful shutdown (idempotent)
     const shutdown = (signal: string) => {
+      if (shutdownCalled) return;
+      shutdownCalled = true;
       log.info(`${signal} received — shutting down gracefully`);
       server.close(() => {
         log.info("server closed");
         process.exit(0);
       });
-      // Force exit if graceful shutdown takes too long
       setTimeout(() => {
         log.warn("graceful shutdown timed out — forcing exit");
         process.exit(1);
@@ -87,6 +99,15 @@ export function createService(opts: ServiceOpts): ServiceInstance {
 
     process.on("SIGTERM", () => shutdown("SIGTERM"));
     process.on("SIGINT", () => shutdown("SIGINT"));
+
+    process.on("uncaughtException", (err) => {
+      log.error(`uncaught exception: ${err.message}`, { stack: err.stack });
+      shutdown("uncaughtException");
+    });
+
+    process.on("unhandledRejection", (reason) => {
+      log.error(`unhandled rejection: ${reason}`);
+    });
 
     return server;
   }

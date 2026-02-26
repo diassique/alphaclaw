@@ -1,6 +1,7 @@
 import { x402Fetch } from "./wallet.js";
 import { serviceUrl, getEffectivePrice } from "../config/services.js";
 import { getReputation } from "./reputation.js";
+import { getOnlineExternalAgents } from "./registry.js";
 import { createLogger } from "../lib/logger.js";
 import { guardedCall } from "./circuit-breaker.js";
 import type { ServiceResponse, SettledResult, CompetitionResult } from "../types/index.js";
@@ -61,6 +62,20 @@ export async function callWhale(address?: string, signal?: AbortSignal): Promise
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ address, limit: 10 }),
+  }, SUB_CALL_TIMEOUT, signal) as Promise<ServiceResponse>;
+}
+
+export async function callExternalAgent(
+  key: string,
+  url: string,
+  endpoint: string,
+  topic: string,
+  signal?: AbortSignal,
+): Promise<ServiceResponse> {
+  return x402Fetch(`${url}${endpoint}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ topic }),
   }, SUB_CALL_TIMEOUT, signal) as Promise<ServiceResponse>;
 }
 
@@ -129,12 +144,30 @@ export async function callAllServices(topic: string, signal?: AbortSignal): Prom
     };
   }
 
+  // ─── External agents ──────────────────────────────────────────────────────
+  const externalAgents = getOnlineExternalAgents();
+  const external: Record<string, ServiceResponse | null> = {};
+
+  if (externalAgents.length > 0) {
+    const extResults = await Promise.allSettled(
+      externalAgents.map(a =>
+        guardedCall(a.key, () => callExternalAgent(a.key, a.url, a.endpoint, topic, signal)),
+      ),
+    );
+
+    for (let i = 0; i < externalAgents.length; i++) {
+      const agent = externalAgents[i]!;
+      external[agent.key] = unwrap(extResults[i]!, agent.key);
+    }
+  }
+
   return {
     news: unwrap(newsR, "news"),
     sentiment: winnerSentiment,
     polymarket: unwrap(polymarketR, "polymarket"),
     defi: unwrap(defiR, "defi"),
     whale: unwrap(whaleR, "whale"),
+    external,
     warnings,
     competitionResult,
   };

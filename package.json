@@ -14,7 +14,9 @@
     "whale": "tsx src/services/whale/index.ts",
     "hunter": "tsx src/agent/index.ts",
     "typecheck": "tsc --noEmit",
-    "tunnel": "cloudflared tunnel --url http://localhost:5000 --no-autoupdate"
+    "tunnel": "cloudflared tunnel --url http://localhost:5000 --no-autoupdate",
+    "web:dev": "cd web && npx vite",
+    "web:build": "cd web && npx vite build"
   },
   "keywords": [
     "x402",

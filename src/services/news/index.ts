@@ -23,7 +23,7 @@ const { app, log, start } = createService({
 
 // ─── CryptoPanic API ────────────────────────────────────────────────────────
 
-const CRYPTOPANIC_API = "https://cryptopanic.com/api/free/v1/posts/";
+const CRYPTOPANIC_API = "https://cryptopanic.com/api/developer/v2/posts/";
 
 async function fetchCryptoPanic(topic: string, limit: number): Promise<{ articles: NewsArticle[]; cached: boolean; cacheAge?: number }> {
   const cacheKey = `news:${topic}`;
@@ -52,10 +52,10 @@ async function fetchCryptoPanic(topic: string, limit: number): Promise<{ article
     const data = await res.json() as CryptoPanicResponse;
     const articles: NewsArticle[] = (data.results ?? []).map((p) => ({
       title: p.title,
-      description: p.metadata?.description ?? "",
+      description: p.description ?? p.metadata?.description ?? "",
       publishedAt: p.published_at,
       source: p.source?.title ?? p.source?.domain ?? "Unknown",
-      url: p.url,
+      url: p.original_url ?? p.url,
     }));
 
     cache.set(cacheKey, articles, CACHE_TTL);

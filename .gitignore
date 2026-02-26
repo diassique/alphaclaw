@@ -1,2 +1,5 @@
 node_modules/
 .env
+data/
+web/dist/
+web/node_modules/

@@ -1,56 +1,109 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import { readFileSync, existsSync, renameSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { createLogger } from "../lib/logger.js";
+import { createStore } from "../lib/store.js";
 import type { MemoryEntry, SignalCombination, MemoryInsight, MemoryStats } from "../types/index.js";
 
 const log = createLogger("memory");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "../../data");
-const MEMORY_FILE = join(DATA_DIR, "memory.json");
+const OLD_MEMORY_FILE = join(DATA_DIR, "memory.json");
 const MAX_ENTRIES = 500;
 const MIN_OCCURRENCES_FOR_ACTIVE = 3;
 
-interface MemoryStore {
+// ─── Persistence ────────────────────────────────────────────────────────────
+
+interface EntriesData {
+  entries: MemoryEntry[];
+}
+
+interface PatternsData {
+  patterns: Record<string, SignalCombination>;
+}
+
+const entriesStore = createStore<EntriesData>({
+  filename: "memory-entries.json",
+  defaultValue: { entries: [] },
+  debounceMs: 5000,
+});
+
+const patternsStore = createStore<PatternsData>({
+  filename: "memory-patterns.json",
+  defaultValue: { patterns: {} },
+  debounceMs: 5000,
+});
+
+// ─── In-memory state ────────────────────────────────────────────────────────
+
+interface MemoryState {
   entries: MemoryEntry[];
   patterns: Map<string, SignalCombination>;
 }
 
-const store: MemoryStore = { entries: [], patterns: new Map() };
+const state: MemoryState = { entries: [], patterns: new Map() };
+
+function saveEntries(): void {
+  entriesStore.set({ entries: state.entries });
+}
+
+function savePatterns(): void {
+  patternsStore.set({ patterns: Object.fromEntries(state.patterns) });
+}
+
+// ─── Migration from old memory.json ─────────────────────────────────────────
+
+function migrateOldMemory(): void {
+  try {
+    if (!existsSync(OLD_MEMORY_FILE)) return;
+
+    // Only migrate if new files don't exist yet
+    const entriesPath = join(DATA_DIR, "memory-entries.json");
+    const patternsPath = join(DATA_DIR, "memory-patterns.json");
+    if (existsSync(entriesPath) || existsSync(patternsPath)) return;
+
+    const raw = JSON.parse(readFileSync(OLD_MEMORY_FILE, "utf-8")) as {
+      entries?: MemoryEntry[];
+      patterns?: Record<string, SignalCombination>;
+    };
+
+    state.entries = raw.entries ?? [];
+    state.patterns = new Map(Object.entries(raw.patterns ?? {}));
+
+    // Save to new stores
+    saveEntries();
+    savePatterns();
+    entriesStore.flush();
+    patternsStore.flush();
+
+    // Rename old file
+    renameSync(OLD_MEMORY_FILE, OLD_MEMORY_FILE + ".migrated");
+    log.info("migrated old memory.json", { entries: state.entries.length, patterns: state.patterns.size });
+  } catch (err) {
+    log.warn("memory migration failed", { error: (err as Error).message });
+  }
+}
+
+// ─── Load ───────────────────────────────────────────────────────────────────
 
 export function loadMemory(): void {
-  try {
-    if (existsSync(MEMORY_FILE)) {
-      const raw = JSON.parse(readFileSync(MEMORY_FILE, "utf-8")) as {
-        entries?: MemoryEntry[];
-        patterns?: Record<string, SignalCombination>;
-      };
-      store.entries = raw.entries ?? [];
-      store.patterns = new Map(Object.entries(raw.patterns ?? {}));
-      log.info("memory loaded", { entries: store.entries.length, patterns: store.patterns.size });
-    }
-  } catch (err) {
-    log.warn("failed to load memory", { error: (err as Error).message });
-  }
+  // Run migration first (no-op if already migrated)
+  migrateOldMemory();
+
+  entriesStore.load();
+  patternsStore.load();
+
+  const entriesData = entriesStore.get();
+  const patternsData = patternsStore.get();
+
+  state.entries = entriesData.entries ?? [];
+  state.patterns = new Map(Object.entries(patternsData.patterns ?? {}));
+
+  log.info("memory loaded", { entries: state.entries.length, patterns: state.patterns.size });
 }
 
-function persist(): void {
-  try {
-    if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-    const data = {
-      entries: store.entries,
-      patterns: Object.fromEntries(store.patterns),
-    };
-    writeFileSync(MEMORY_FILE, JSON.stringify(data, null, 2));
-  } catch (err) {
-    log.warn("failed to persist memory", { error: (err as Error).message });
-  }
-}
-
-function buildComboKey(signals: string[]): string {
-  return [...signals].sort().join("+");
-}
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 /** Generate all 2- and 3-signal combinations from a signal list. */
 function signalCombos(signals: string[]): string[] {
@@ -79,22 +132,22 @@ function signalCombos(signals: string[]): string[] {
 export function recordHunt(entry: Omit<MemoryEntry, "id">): MemoryEntry {
   const id = `mem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   const full: MemoryEntry = { id, ...entry };
-  store.entries.push(full);
+  state.entries.push(full);
 
   // Trim old entries
-  if (store.entries.length > MAX_ENTRIES) {
-    store.entries = store.entries.slice(-MAX_ENTRIES);
+  if (state.entries.length > MAX_ENTRIES) {
+    state.entries = state.entries.slice(-MAX_ENTRIES);
   }
 
   // Update pattern occurrences
   const combos = signalCombos(entry.signals);
   for (const combo of combos) {
-    const existing = store.patterns.get(combo);
+    const existing = state.patterns.get(combo);
     if (existing) {
       existing.occurrences++;
       existing.lastSeen = entry.timestamp;
     } else {
-      store.patterns.set(combo, {
+      state.patterns.set(combo, {
         combo,
         occurrences: 1,
         correctCount: 0,
@@ -104,12 +157,13 @@ export function recordHunt(entry: Omit<MemoryEntry, "id">): MemoryEntry {
     }
   }
 
-  persist();
+  saveEntries();
+  savePatterns();
   return full;
 }
 
 export function verifyEntry(id: string, outcome: "correct" | "incorrect"): boolean {
-  const entry = store.entries.find(e => e.id === id);
+  const entry = state.entries.find(e => e.id === id);
   if (!entry || entry.verified) return false;
 
   entry.verified = true;
@@ -118,17 +172,18 @@ export function verifyEntry(id: string, outcome: "correct" | "incorrect"): boole
   // Update pattern accuracy
   const combos = signalCombos(entry.signals);
   for (const combo of combos) {
-    const p = store.patterns.get(combo);
+    const p = state.patterns.get(combo);
     if (p) {
       if (outcome === "correct") p.correctCount++;
       // Recalculate accuracy from all verified entries matching this combo
-      const verified = store.entries.filter(e => e.verified && signalCombos(e.signals).includes(combo));
+      const verified = state.entries.filter(e => e.verified && signalCombos(e.signals).includes(combo));
       const correct = verified.filter(e => e.outcome === "correct").length;
       p.accuracy = verified.length > 0 ? correct / verified.length : 0;
     }
   }
 
-  persist();
+  saveEntries();
+  savePatterns();
   return true;
 }
 
@@ -143,11 +198,11 @@ export function getConfidenceAdjustment(signals: string[]): { adjustment: number
   const reasons: string[] = [];
 
   for (const combo of combos) {
-    const p = store.patterns.get(combo);
+    const p = state.patterns.get(combo);
     if (!p || p.occurrences < MIN_OCCURRENCES_FOR_ACTIVE) continue;
 
     // Only patterns with verified outcomes contribute
-    const verifiedEntries = store.entries.filter(e => e.verified && signalCombos(e.signals).includes(combo));
+    const verifiedEntries = state.entries.filter(e => e.verified && signalCombos(e.signals).includes(combo));
     if (verifiedEntries.length < 2) continue;
 
     matchCount++;
@@ -177,7 +232,7 @@ export function getConfidenceAdjustment(signals: string[]): { adjustment: number
 }
 
 export function getStats(): MemoryStats {
-  const activePatterns = [...store.patterns.values()].filter(p => p.occurrences >= MIN_OCCURRENCES_FOR_ACTIVE);
+  const activePatterns = [...state.patterns.values()].filter(p => p.occurrences >= MIN_OCCURRENCES_FOR_ACTIVE);
 
   const toInsight = (p: SignalCombination): MemoryInsight => ({
     combo: p.combo,
@@ -189,9 +244,9 @@ export function getStats(): MemoryStats {
   const sorted = activePatterns.sort((a, b) => b.accuracy - a.accuracy);
 
   return {
-    totalEntries: store.entries.length,
-    verifiedEntries: store.entries.filter(e => e.verified).length,
-    patterns: store.patterns.size,
+    totalEntries: state.entries.length,
+    verifiedEntries: state.entries.filter(e => e.verified).length,
+    patterns: state.patterns.size,
     activePatterns: activePatterns.length,
     topPatterns: sorted.slice(0, 5).map(toInsight),
     weakPatterns: sorted.slice(-5).reverse().map(toInsight),
@@ -199,5 +254,5 @@ export function getStats(): MemoryStats {
 }
 
 export function getEntries(limit = 20): MemoryEntry[] {
-  return store.entries.slice(-limit).reverse();
+  return state.entries.slice(-limit).reverse();
 }

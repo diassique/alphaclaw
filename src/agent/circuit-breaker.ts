@@ -1,4 +1,5 @@
 import { createLogger } from "../lib/logger.js";
+import { createStore } from "../lib/store.js";
 import type { ServiceKey, CircuitState, CircuitBreakerEntry, CircuitBreakerStatus } from "../types/index.js";
 
 const log = createLogger("circuit-breaker");
@@ -14,7 +15,40 @@ interface InternalCircuit {
   openedAt: number;
 }
 
+// ─── Persistence ────────────────────────────────────────────────────────────
+
+interface CircuitData {
+  circuits: Record<string, InternalCircuit>;
+}
+
+const store = createStore<CircuitData>({
+  filename: "circuits.json",
+  defaultValue: { circuits: {} },
+  debounceMs: 10_000,
+});
+
+function saveToStore(): void {
+  const data: CircuitData = { circuits: {} };
+  for (const [key, c] of circuits) data.circuits[key] = { ...c };
+  store.set(data);
+}
+
 const circuits = new Map<ServiceKey, InternalCircuit>();
+
+/** Load persisted circuit states from disk. Recalculates time-based transitions. */
+export function loadCircuits(): void {
+  store.load();
+  const data = store.get();
+  const now = Date.now();
+  for (const [key, c] of Object.entries(data.circuits)) {
+    // Recalculate: if "open" and timeout expired → half-open
+    if (c.state === "open" && now - c.openedAt >= OPEN_DURATION_MS) {
+      c.state = "half-open";
+      log.info("circuit recovered to half-open on load", { service: key });
+    }
+    circuits.set(key as ServiceKey, c);
+  }
+}
 
 function getOrCreate(key: ServiceKey): InternalCircuit {
   let c = circuits.get(key);
@@ -55,6 +89,7 @@ export function recordSuccess(key: ServiceKey): void {
   } else if (c.state === "closed") {
     c.failures = 0;
   }
+  saveToStore();
 }
 
 export function recordFailure(key: ServiceKey): void {
@@ -67,6 +102,7 @@ export function recordFailure(key: ServiceKey): void {
     c.state = "open";
     c.openedAt = Date.now();
     log.warn("circuit re-opened (probe failed)", { service: key });
+    saveToStore();
     return;
   }
 
@@ -75,6 +111,7 @@ export function recordFailure(key: ServiceKey): void {
     c.openedAt = Date.now();
     log.warn("circuit opened", { service: key, failures: c.failures });
   }
+  saveToStore();
 }
 
 export function getCircuitSnapshot(): CircuitBreakerStatus {

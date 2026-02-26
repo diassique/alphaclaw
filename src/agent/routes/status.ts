@@ -82,7 +82,7 @@ export function registerStatusRoutes(app: Application): void {
       totalCount,
       avgLatencyMs: avgLatency,
       services: results,
-      marketplaceStatus: onlineCount === totalCount ? "FULLY OPERATIONAL" : onlineCount > 0 ? "DEGRADED" : "OFFLINE",
+      networkStatus: onlineCount === totalCount ? "FULLY OPERATIONAL" : onlineCount > 0 ? "DEGRADED" : "OFFLINE",
       checkedAt: new Date().toISOString(),
     });
   });

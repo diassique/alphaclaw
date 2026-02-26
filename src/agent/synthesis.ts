@@ -6,10 +6,12 @@ import type {
   NewsResult,
   WhaleResult,
   ServiceKey,
+  ServiceResponse,
   StakingSummary,
   ReputationSnapshot,
   DynamicPrice,
   CompetitionResult,
+  Direction,
 } from "../types/index.js";
 import {
   extractConfidence,
@@ -31,6 +33,7 @@ export function synthesizeAlpha({
   whaleResult,
   warnings,
   competitionResult,
+  externalResults,
 }: {
   huntId: string;
   sentimentResult: { result?: SentimentResult } | null;
@@ -40,6 +43,7 @@ export function synthesizeAlpha({
   whaleResult: { result?: WhaleResult } | null;
   warnings?: string[];
   competitionResult?: CompetitionResult;
+  externalResults?: Record<string, ServiceResponse | null>;
 }): AlphaSynthesis {
   const sentiment  = sentimentResult?.result as SentimentResult | undefined;
   const polymarket = polymarketResult?.result as PolymarketResult | undefined;
@@ -56,6 +60,13 @@ export function synthesizeAlpha({
     { key: "whale",      data: whaleResult },
   ];
 
+  // Include external agents in consensus / staking
+  if (externalResults) {
+    for (const [key, resp] of Object.entries(externalResults)) {
+      if (resp) serviceData.push({ key, data: resp.data });
+    }
+  }
+
   // Extract confidence from each service
   const entries = serviceData.map(({ key, data }) => ({
     key,
@@ -71,6 +82,11 @@ export function synthesizeAlpha({
 
   const consensus = computeConsensus(directions);
 
+  // Consensus strength: how many services agree on the consensus direction?
+  const agreeingServices = directions.filter(d => d.direction === consensus).length;
+  const respondingServices = serviceData.filter(d => d.data !== null).length;
+  const consensusStrength = respondingServices > 0 ? agreeingServices / respondingServices : 0;
+
   // Settle staking
   const stakingSummary: StakingSummary = settleHunt(huntId, entries, consensus);
   const reputationSnapshot: ReputationSnapshot = getReputationSnapshot();
@@ -78,7 +94,7 @@ export function synthesizeAlpha({
   // ─── Weighted scoring ───────────────────────────────────────────────────
 
   // Signal strength per service (0–1 scale)
-  const signalStrengths: Record<ServiceKey, number> = {
+  const signalStrengths: Record<string, number> = {
     sentiment: 0,
     sentiment2: 0,
     polymarket: 0,
@@ -119,13 +135,34 @@ export function synthesizeAlpha({
     signals.push(`news:${news.articles.length}_articles`);
   }
 
+  // External agent signals
+  if (externalResults) {
+    for (const [key, resp] of Object.entries(externalResults)) {
+      if (!resp?.data) continue;
+      const extResult = (resp.data as Record<string, unknown>)["result"] as Record<string, unknown> | undefined;
+      if (!extResult) continue;
+
+      const dir = extResult["direction"] as string | undefined;
+      const conf = typeof extResult["confidenceScore"] === "number" ? extResult["confidenceScore"] as number : 0.3;
+      const extSignals = Array.isArray(extResult["signals"]) ? extResult["signals"] as string[] : [];
+
+      // Map direction to signal strength
+      if (dir === "bullish") signalStrengths[key] = conf;
+      else if (dir === "bearish") signalStrengths[key] = conf;
+      else signalStrengths[key] = 0.2;
+
+      signals.push(`${key}:${dir ?? "unknown"}(${(conf * 100).toFixed(0)}%)`);
+      for (const s of extSignals.slice(0, 3)) signals.push(`${key}:${s}`);
+    }
+  }
+
   // Weighted confidence: weight = signal_strength * confidence * reputation
   let totalWeight = 0;
   let maxPossibleWeight = 0;
 
   for (const { key, confidenceScore } of entries) {
     const rep = getReputation(key).score;
-    const strength = signalStrengths[key];
+    const strength = signalStrengths[key] ?? 0;
     totalWeight += strength * confidenceScore * rep;
     maxPossibleWeight += 1.0 * 1.0 * 1.0; // theoretical max
   }
@@ -140,6 +177,15 @@ export function synthesizeAlpha({
     weightedConfidence = parseFloat(Math.max(0, Math.min(100, weightedConfidence + memoryAdj.adjustment)).toFixed(1));
     if (memoryAdj.adjustment > 0) signals.push(`memory:+${memoryAdj.adjustment}`);
     else signals.push(`memory:${memoryAdj.adjustment}`);
+  }
+
+  // Consensus penalty: if fewer than 3/5 services agree, reduce confidence
+  if (consensusStrength < 0.6 && consensus !== "neutral") {
+    const penalty = parseFloat(((0.6 - consensusStrength) * 30).toFixed(1)); // up to -18 pts
+    weightedConfidence = parseFloat(Math.max(0, weightedConfidence - penalty).toFixed(1));
+    signals.push(`consensus:weak(${agreeingServices}/${respondingServices},-${penalty})`);
+  } else if (consensusStrength >= 0.8) {
+    signals.push(`consensus:strong(${agreeingServices}/${respondingServices})`);
   }
 
   const confidence = Math.min(Math.round(weightedConfidence), 100);
@@ -159,6 +205,7 @@ export function synthesizeAlpha({
   return {
     confidence: `${confidence}%`,
     weightedConfidence,
+    consensusStrength: parseFloat(consensusStrength.toFixed(2)),
     recommendation,
     signals,
     ...(warnings && warnings.length > 0 ? { warnings } : {}),
@@ -182,6 +229,35 @@ export function synthesizeAlpha({
       whale: whale
         ? { signal: whale.signal, whaleCount: whale.whaleCount, totalVolume: whale.totalVolumeUSD }
         : null,
+      ...(externalResults && Object.keys(externalResults).length > 0
+        ? { external: buildExternalBreakdown(externalResults) }
+        : {}),
     },
   };
+}
+
+function buildExternalBreakdown(
+  externalResults: Record<string, ServiceResponse | null>,
+): Record<string, { direction: Direction; confidence: number; signals: string[] } | null> {
+  const breakdown: Record<string, { direction: Direction; confidence: number; signals: string[] } | null> = {};
+  for (const [key, resp] of Object.entries(externalResults)) {
+    if (!resp?.data) {
+      breakdown[key] = null;
+      continue;
+    }
+    const extResult = (resp.data as Record<string, unknown>)["result"] as Record<string, unknown> | undefined;
+    if (!extResult) {
+      breakdown[key] = null;
+      continue;
+    }
+    const dir = extResult["direction"] as Direction | undefined;
+    const conf = typeof extResult["confidenceScore"] === "number" ? extResult["confidenceScore"] as number : 0;
+    const sigs = Array.isArray(extResult["signals"]) ? extResult["signals"] as string[] : [];
+    breakdown[key] = {
+      direction: dir ?? "neutral",
+      confidence: conf,
+      signals: sigs,
+    };
+  }
+  return breakdown;
 }

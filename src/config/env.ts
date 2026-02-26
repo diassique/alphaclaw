@@ -10,6 +10,7 @@ export interface AppConfig {
   corsOrigins: string;
   cryptoPanicToken: string;
   baseRpcUrl: string;
+  baseMainnetRpcUrl: string;
   ports: {
     sentiment: number;
     sentiment2: number;
@@ -30,6 +31,7 @@ export interface AppConfig {
     maxIntervalMs: number;
     topics: string[];
   };
+  cloudflareTunnelToken: string;
 }
 
 function env(key: string, fallback: string): string {
@@ -51,6 +53,7 @@ export const config: AppConfig = Object.freeze({
   corsOrigins: env("CORS_ORIGINS", "*"),
   cryptoPanicToken: env("CRYPTOPANIC_TOKEN", ""),
   baseRpcUrl: env("BASE_RPC_URL", "https://sepolia.base.org"),
+  baseMainnetRpcUrl: env("BASE_MAINNET_RPC_URL", "https://mainnet.base.org"),
   ports: Object.freeze({
     sentiment: envInt("PORT_SENTIMENT", 4001),
     sentiment2: envInt("PORT_SENTIMENT2", 4006),
@@ -65,6 +68,7 @@ export const config: AppConfig = Object.freeze({
     chatId: env("TELEGRAM_CHAT_ID", ""),
     alertThreshold: envInt("TELEGRAM_ALERT_THRESHOLD", 50),
   }),
+  cloudflareTunnelToken: env("CLOUDFLARE_TUNNEL_TOKEN", ""),
   autopilot: Object.freeze({
     baseIntervalMs: envInt("AUTOPILOT_INTERVAL_MS", 5 * 60_000),
     minIntervalMs: envInt("AUTOPILOT_MIN_INTERVAL_MS", 60_000),

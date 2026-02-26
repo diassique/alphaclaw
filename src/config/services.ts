@@ -106,19 +106,38 @@ export function setReputationProvider(fn: (key: ServiceKey) => number): void {
   _getRepScore = fn;
 }
 
+// Lazy registry provider to avoid circular dependency (registry imports services)
+let _getAgentPrice: ((key: string) => string | null) | null = null;
+let _getAllKeys: (() => string[]) | null = null;
+
+export function setRegistryProvider(
+  getAgentPriceFn: (key: string) => string | null,
+  getAllKeysFn: () => string[],
+): void {
+  _getAgentPrice = getAgentPriceFn;
+  _getAllKeys = getAllKeysFn;
+}
+
 function parsePrice(p: string): number {
   return parseFloat(p.replace("$", ""));
 }
 
 export function getEffectivePrice(key: ServiceKey): DynamicPrice {
   const def = SERVICE_DEFS[key];
-  const baseNum = def ? parsePrice(def.price) : 0;
+  let basePrice = def?.price ?? null;
+
+  // Fallback to registry for external agents
+  if (!basePrice && _getAgentPrice) {
+    basePrice = _getAgentPrice(key);
+  }
+
+  const baseNum = basePrice ? parsePrice(basePrice) : 0;
   const rep = _getRepScore ? _getRepScore(key) : 0.5;
   const multiplier = parseFloat((0.5 + rep).toFixed(3));
   const effective = parseFloat((baseNum * multiplier).toFixed(4));
   return {
     service: key,
-    basePrice: def?.price ?? "$0",
+    basePrice: basePrice ?? "$0",
     effectivePrice: `$${effective}`,
     multiplier,
     reputation: parseFloat(rep.toFixed(3)),
@@ -126,6 +145,12 @@ export function getEffectivePrice(key: ServiceKey): DynamicPrice {
 }
 
 export function getAllDynamicPrices(): DynamicPrice[] {
-  const keys: ServiceKey[] = ["sentiment", "sentiment2", "polymarket", "defi", "news", "whale"];
+  const builtinKeys: string[] = ["sentiment", "sentiment2", "polymarket", "defi", "news", "whale"];
+  const allKeys = _getAllKeys ? _getAllKeys() : builtinKeys;
+  // Deduplicate: built-in first, then any extra from registry
+  const seen = new Set<string>();
+  const keys: string[] = [];
+  for (const k of builtinKeys) { seen.add(k); keys.push(k); }
+  for (const k of allKeys) { if (!seen.has(k)) { seen.add(k); keys.push(k); } }
   return keys.map(getEffectivePrice);
 }

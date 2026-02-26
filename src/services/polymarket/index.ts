@@ -70,20 +70,20 @@ function scoreMarket(market: PolymarketMarket): AlphaOpportunity {
 
   const distFromHalf = Math.abs(yesPrice - 0.5);
   const isHighVolume = volume > 1_000_000;
-  const isNear50     = distFromHalf < 0.15;
-  const isMedium     = distFromHalf < 0.25;
+  const isSkewed     = distFromHalf > 0.25;       // >75% or <25% — strong conviction
+  const isMildSkew   = distFromHalf > 0.15;       // >65% or <35%
 
   let alphaSignal: AlphaSignal;
   let reason: string;
-  if (isHighVolume && isNear50) {
+  if (isHighVolume && isSkewed) {
     alphaSignal = "HIGH";
-    reason = "High-volume market near 50/50 — strong sentiment divergence likely";
-  } else if (isMedium || (isHighVolume && !isNear50)) {
+    reason = `High-volume market with strong skew (${(yesPrice * 100).toFixed(0)}% YES) — conviction signal`;
+  } else if (isMildSkew || (isHighVolume && !isSkewed)) {
     alphaSignal = "MEDIUM";
-    reason = "Moderate opportunity — monitor for momentum shift";
+    reason = `Moderate skew (${(yesPrice * 100).toFixed(0)}% YES) — directional lean forming`;
   } else {
     alphaSignal = "LOW";
-    reason = "Clear consensus — limited alpha unless new catalyst emerges";
+    reason = "Near 50/50 — market undecided, low information value";
   }
 
   return {

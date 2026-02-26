@@ -2,11 +2,17 @@ import { randomUUID } from "crypto";
 import type { Application } from "express";
 import { createLogger } from "../../lib/logger.js";
 import { config } from "../../config/env.js";
-import { callNews, callSentiment, callSentiment2, callPolymarket, callDefi, callWhale } from "../orchestrator.js";
+import { callNews, callSentiment, callSentiment2, callPolymarket, callDefi, callWhale, callExternalAgent } from "../orchestrator.js";
+import { getOnlineExternalAgents } from "../registry.js";
 import { getReputation } from "../reputation.js";
 import { synthesizeAlpha } from "../synthesis.js";
 import { generateReportId, cacheReport } from "../report-cache.js";
+import { recordHunt } from "../memory.js";
+import { scheduleSettlement } from "../settlement.js";
+import { extractDirection } from "../reputation.js";
 import { getEffectivePrice } from "../../config/services.js";
+import { walletClient } from "../wallet.js";
+import { recordTx } from "../tx-log.js";
 import type { ServiceResponse, SentimentResult, PolymarketResult, DefiResult, NewsResult, WhaleResult, CachedReport, ServiceKey } from "../../types/index.js";
 
 const log = createLogger("coordinator");
@@ -56,34 +62,116 @@ export function registerStreamRoutes(app: Application): void {
     });
 
     try {
-      send("start", { topic, huntId, timestamp: new Date().toISOString(), services: 5 });
+      const fromAddr = walletClient?.account?.address ?? null;
+      const toAddr = config.walletAddress || null;
+
+      send("start", { topic, huntId, timestamp: new Date().toISOString(), services: 5, fromAddr, toAddr });
 
       const signal = streamAbort.signal;
 
       const dp = (k: ServiceKey) => getEffectivePrice(k);
 
+      // Emit all paying events upfront
       const newsP = dp("news");
-      send("paying", { service: "news-agent", amount: newsP.effectivePrice, baseAmount: newsP.basePrice, multiplier: newsP.multiplier, port: 4004 });
-      let newsRes: ServiceResponse | null = null;
-      try { newsRes = await callNews(topic, signal); } catch (err) { if (!closed) log.warn("stream: news failed", { error: (err as Error).message }); }
-      send("result", { service: "news-agent", data: newsRes?.data ?? null, txHash: newsRes?.txHash, paid: newsRes?.paid ?? false });
-
-      // Sentiment competition: call both in parallel
       const sentP = dp("sentiment");
       const sent2P = dp("sentiment2");
-      send("paying", { service: "crypto-sentiment", amount: sentP.effectivePrice, baseAmount: sentP.basePrice, multiplier: sentP.multiplier, port: 4001 });
-      send("paying", { service: "crypto-sentiment-v2", amount: sent2P.effectivePrice, baseAmount: sent2P.basePrice, multiplier: sent2P.multiplier, port: 4006 });
+      const polyP = dp("polymarket");
+      const defiP = dp("defi");
+      const whaleP = dp("whale");
 
-      let sent1Res: ServiceResponse | null = null;
-      let sent2Res: ServiceResponse | null = null;
-      const [s1, s2] = await Promise.allSettled([callSentiment(topic, signal), callSentiment2(topic, signal)]);
-      if (s1.status === "fulfilled") sent1Res = s1.value; else if (!closed) log.warn("stream: sentiment failed", { error: (s1 as PromiseRejectedResult).reason });
-      if (s2.status === "fulfilled") sent2Res = s2.value; else if (!closed) log.warn("stream: sentiment2 failed", { error: (s2 as PromiseRejectedResult).reason });
+      send("paying", { service: "news-agent", amount: newsP.effectivePrice, baseAmount: newsP.basePrice, multiplier: newsP.multiplier, port: 4004, fromAddr, toAddr });
+      send("paying", { service: "crypto-sentiment", amount: sentP.effectivePrice, baseAmount: sentP.basePrice, multiplier: sentP.multiplier, port: 4001, fromAddr, toAddr });
+      send("paying", { service: "crypto-sentiment-v2", amount: sent2P.effectivePrice, baseAmount: sent2P.basePrice, multiplier: sent2P.multiplier, port: 4006, fromAddr, toAddr });
+      send("paying", { service: "polymarket-alpha-scanner", amount: polyP.effectivePrice, baseAmount: polyP.basePrice, multiplier: polyP.multiplier, port: 4002, fromAddr, toAddr });
+      send("paying", { service: "defi-alpha-scanner", amount: defiP.effectivePrice, baseAmount: defiP.basePrice, multiplier: defiP.multiplier, port: 4003, fromAddr, toAddr });
+      send("paying", { service: "whale-agent", amount: whaleP.effectivePrice, baseAmount: whaleP.basePrice, multiplier: whaleP.multiplier, port: 4005, fromAddr, toAddr });
 
-      send("result", { service: "crypto-sentiment", data: sent1Res?.data ?? null, txHash: sent1Res?.txHash, paid: sent1Res?.paid ?? false });
-      send("result", { service: "crypto-sentiment-v2", data: sent2Res?.data ?? null, txHash: sent2Res?.txHash, paid: sent2Res?.paid ?? false });
+      // Emit paying events for external agents
+      const extAgents = getOnlineExternalAgents();
+      for (const ext of extAgents) {
+        const extDp = dp(ext.key);
+        send("paying", { service: ext.displayName, amount: extDp.effectivePrice, baseAmount: extDp.basePrice, multiplier: extDp.multiplier, port: null, url: ext.url, fromAddr, toAddr, external: true });
+      }
 
-      // Pick winner
+      // Fire ALL service calls in parallel (built-in + external)
+      // Fire built-in and external in parallel
+      const builtinSettled = Promise.allSettled([
+        callNews(topic, signal),
+        callSentiment(topic, signal),
+        callSentiment2(topic, signal),
+        callPolymarket(null, signal),
+        callDefi(null, signal),
+        callWhale(undefined, signal),
+      ]);
+      const extSettledP = Promise.allSettled(
+        extAgents.map(a => callExternalAgent(a.key, a.url, a.endpoint, topic, signal)),
+      );
+
+      const [builtinResults, extSettled] = await Promise.all([builtinSettled, extSettledP]);
+      const [newsS, s1, s2, polyS, defiS, whaleS] = builtinResults;
+
+      function unwrap(r: PromiseSettledResult<ServiceResponse>, name: string): ServiceResponse | null {
+        if (r.status === "fulfilled") return r.value;
+        if (!closed) log.warn(`stream: ${name} failed`, { error: (r as PromiseRejectedResult).reason?.message ?? r.reason });
+        return null;
+      }
+
+      const newsRes = unwrap(newsS, "news");
+      const sent1Res = unwrap(s1, "sentiment");
+      const sent2Res = unwrap(s2, "sentiment2");
+      let polymarketRes = unwrap(polyS, "polymarket");
+      let defiRes = unwrap(defiS, "defi");
+      let whaleRes = unwrap(whaleS, "whale");
+
+      // Stream results as they arrive (already resolved)
+      const resultEntries: { service: string; res: ServiceResponse | null; amount: string; port: number }[] = [
+        { service: "news-agent", res: newsRes, amount: newsP.effectivePrice, port: 4004 },
+        { service: "crypto-sentiment", res: sent1Res, amount: sentP.effectivePrice, port: 4001 },
+        { service: "crypto-sentiment-v2", res: sent2Res, amount: sent2P.effectivePrice, port: 4006 },
+        { service: "polymarket-alpha-scanner", res: polymarketRes, amount: polyP.effectivePrice, port: 4002 },
+        { service: "defi-alpha-scanner", res: defiRes, amount: defiP.effectivePrice, port: 4003 },
+        { service: "whale-agent", res: whaleRes, amount: whaleP.effectivePrice, port: 4005 },
+      ];
+
+      for (const entry of resultEntries) {
+        send("result", { service: entry.service, data: entry.res?.data ?? null, txHash: entry.res?.txHash, paid: entry.res?.paid ?? false, fromAddr, toAddr });
+        if (fromAddr && toAddr) {
+          recordTx({
+            timestamp: new Date().toISOString(),
+            service: entry.service,
+            fromAddr,
+            toAddr,
+            amount: entry.amount,
+            txHash: entry.res?.txHash,
+            network: "base-sepolia",
+            status: entry.res?.paid ? "paid" : entry.res?.demoMode ? "demo" : "failed",
+          });
+        }
+      }
+
+      // External agent results
+      const externalResults: Record<string, ServiceResponse | null> = {};
+      for (let i = 0; i < extAgents.length; i++) {
+        const agent = extAgents[i]!;
+        const extRes = unwrap(extSettled[i]!, agent.key);
+        externalResults[agent.key] = extRes;
+        const extDp = dp(agent.key);
+        send("result", { service: agent.displayName, data: extRes?.data ?? null, txHash: extRes?.txHash, paid: extRes?.paid ?? false, fromAddr, toAddr, external: true });
+        if (fromAddr && toAddr) {
+          recordTx({
+            timestamp: new Date().toISOString(),
+            service: agent.displayName,
+            fromAddr,
+            toAddr,
+            amount: extDp.effectivePrice,
+            txHash: extRes?.txHash,
+            network: "base-sepolia",
+            status: extRes?.paid ? "paid" : extRes?.demoMode ? "demo" : "failed",
+          });
+        }
+      }
+
+      // Pick sentiment winner
       const rep1 = getReputation("sentiment").score;
       const rep2 = getReputation("sentiment2").score;
       const price1 = parseFloat(sentP.effectivePrice.replace("$", "")) || 0.001;
@@ -108,24 +196,6 @@ export function registerStreamRoutes(app: Application): void {
         send("competition", competitionResult);
       }
 
-      const polyP = dp("polymarket");
-      send("paying", { service: "polymarket-alpha-scanner", amount: polyP.effectivePrice, baseAmount: polyP.basePrice, multiplier: polyP.multiplier, port: 4002 });
-      let polymarketRes: ServiceResponse | null = null;
-      try { polymarketRes = await callPolymarket(null, signal); } catch (err) { if (!closed) log.warn("stream: polymarket failed", { error: (err as Error).message }); }
-      send("result", { service: "polymarket-alpha-scanner", data: polymarketRes?.data ?? null, txHash: polymarketRes?.txHash, paid: polymarketRes?.paid ?? false });
-
-      const defiP = dp("defi");
-      send("paying", { service: "defi-alpha-scanner", amount: defiP.effectivePrice, baseAmount: defiP.basePrice, multiplier: defiP.multiplier, port: 4003 });
-      let defiRes: ServiceResponse | null = null;
-      try { defiRes = await callDefi(null, signal); } catch (err) { if (!closed) log.warn("stream: defi failed", { error: (err as Error).message }); }
-      send("result", { service: "defi-alpha-scanner", data: defiRes?.data ?? null, txHash: defiRes?.txHash, paid: defiRes?.paid ?? false });
-
-      const whaleP = dp("whale");
-      send("paying", { service: "whale-agent", amount: whaleP.effectivePrice, baseAmount: whaleP.basePrice, multiplier: whaleP.multiplier, port: 4005 });
-      let whaleRes: ServiceResponse | null = null;
-      try { whaleRes = await callWhale(undefined, signal); } catch (err) { if (!closed) log.warn("stream: whale failed", { error: (err as Error).message }); }
-      send("result", { service: "whale-agent", data: whaleRes?.data ?? null, txHash: whaleRes?.txHash, paid: whaleRes?.paid ?? false });
-
       const alpha = synthesizeAlpha({
         huntId,
         sentimentResult:  sentimentRes?.data as { result?: SentimentResult } | null,
@@ -134,6 +204,7 @@ export function registerStreamRoutes(app: Application): void {
         newsResult:       newsRes?.data as { result?: NewsResult } | null,
         whaleResult:      whaleRes?.data as { result?: WhaleResult } | null,
         competitionResult,
+        externalResults,
       });
 
       send("alpha", alpha);
@@ -163,6 +234,39 @@ export function registerStreamRoutes(app: Application): void {
       };
       cacheReport(report);
       send("cached", { reportId, sellPrice: "$0.01", url: `/report/${reportId}` });
+
+      // Record in memory + schedule settlement against real price oracle
+      const memEntry = recordHunt({
+        topic,
+        timestamp: ts,
+        signals: alpha.signals,
+        confidence: alpha.weightedConfidence,
+        recommendation: alpha.recommendation,
+      });
+
+      const serviceData: { key: ServiceKey; data: unknown }[] = [
+        { key: "sentiment", data: sentimentRes?.data },
+        { key: "polymarket", data: polymarketRes?.data },
+        { key: "defi", data: defiRes?.data },
+        { key: "news", data: newsRes?.data },
+        { key: "whale", data: whaleRes?.data },
+      ];
+      for (const [key, resp] of Object.entries(externalResults)) {
+        if (resp) serviceData.push({ key, data: resp.data });
+      }
+
+      scheduleSettlement({
+        huntId,
+        topic,
+        consensus: alpha.stakingSummary.consensus,
+        serviceDirections: serviceData.map(({ key, data }) => ({
+          key,
+          direction: extractDirection(key, data),
+        })),
+        memoryEntryId: memEntry.id,
+      }).catch(err => log.warn("settlement schedule failed", { error: (err as Error).message }));
+
+      send("settlement", { scheduled: true, settleIn: "10min", memoryEntryId: memEntry.id });
 
     } catch (err) {
       send("error", { message: (err as Error).message });

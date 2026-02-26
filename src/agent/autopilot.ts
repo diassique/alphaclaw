@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import { randomUUID } from "crypto";
 import { createLogger } from "../lib/logger.js";
+import { createStore } from "../lib/store.js";
 import { config } from "../config/env.js";
 import { callAllServices } from "./orchestrator.js";
 import { synthesizeAlpha } from "./synthesis.js";
@@ -24,6 +25,49 @@ import type {
 } from "../types/index.js";
 
 const log = createLogger("autopilot");
+
+// ─── Persistence ────────────────────────────────────────────────────────────
+
+interface AutopilotData {
+  currentIntervalMs: number;
+  huntCount: number;
+  topicIndex: number;
+  adaptations: AdaptationRecord[];
+}
+
+const store = createStore<AutopilotData>({
+  filename: "autopilot.json",
+  defaultValue: {
+    currentIntervalMs: config.autopilot.baseIntervalMs,
+    huntCount: 0,
+    topicIndex: 0,
+    adaptations: [],
+  },
+  debounceMs: 5000,
+});
+
+function saveToStore(): void {
+  store.set({
+    currentIntervalMs,
+    huntCount,
+    topicIndex,
+    adaptations: adaptations.slice(-50),
+  });
+}
+
+/** Load persisted autopilot state. Does NOT restore running — autopilot must be explicitly started. */
+export function loadAutopilot(): void {
+  store.load();
+  const data = store.get();
+  currentIntervalMs = data.currentIntervalMs || config.autopilot.baseIntervalMs;
+  huntCount = data.huntCount || 0;
+  topicIndex = data.topicIndex || 0;
+  adaptations.length = 0;
+  adaptations.push(...(data.adaptations ?? []));
+  log.info("autopilot state loaded", { huntCount, topicIndex, currentIntervalMs });
+}
+
+// ─── State ──────────────────────────────────────────────────────────────────
 
 export const autopilotEmitter = new EventEmitter();
 autopilotEmitter.setMaxListeners(50);
@@ -62,7 +106,7 @@ async function runHunt(): Promise<void> {
   log.info("autopilot hunt", { huntId, topic, interval: currentIntervalMs });
 
   try {
-    const { news, sentiment, polymarket, defi, whale, warnings, competitionResult } = await callAllServices(topic);
+    const { news, sentiment, polymarket, defi, whale, external, warnings, competitionResult } = await callAllServices(topic);
 
     const alpha = synthesizeAlpha({
       huntId,
@@ -73,6 +117,7 @@ async function runHunt(): Promise<void> {
       whaleResult: whale?.data as { result?: WhaleResult } | null,
       warnings,
       competitionResult,
+      externalResults: external,
     });
 
     huntCount++;
@@ -82,15 +127,19 @@ async function runHunt(): Promise<void> {
     const reportId = generateReportId(topic, ts);
     const dp = alpha.dynamicPricing;
     const priceOf = (svc: string) => dp.find(p => p.service === svc)?.effectivePrice ?? "?";
+    const builtinBreakdown = [
+      { service: "news-agent", price: priceOf("news"), paid: news?.paid ?? false, txHash: news?.txHash },
+      { service: "crypto-sentiment", price: priceOf("sentiment"), paid: sentiment?.paid ?? false, txHash: sentiment?.txHash },
+      { service: "polymarket-alpha-scanner", price: priceOf("polymarket"), paid: polymarket?.paid ?? false, txHash: polymarket?.txHash },
+      { service: "defi-alpha-scanner", price: priceOf("defi"), paid: defi?.paid ?? false, txHash: defi?.txHash },
+      { service: "whale-agent", price: priceOf("whale"), paid: whale?.paid ?? false, txHash: whale?.txHash },
+    ];
+    for (const [key, resp] of Object.entries(external)) {
+      builtinBreakdown.push({ service: key, price: priceOf(key), paid: resp?.paid ?? false, txHash: resp?.txHash });
+    }
     const paymentLog: PaymentLog = {
       totalPaid: walletClient ? `${dp.reduce((s, p) => s + parseFloat(p.effectivePrice.replace("$", "")), 0).toFixed(4)} USDC` : "demo mode",
-      breakdown: [
-        { service: "news-agent", price: priceOf("news"), paid: news?.paid ?? false, txHash: news?.txHash },
-        { service: "crypto-sentiment", price: priceOf("sentiment"), paid: sentiment?.paid ?? false, txHash: sentiment?.txHash },
-        { service: "polymarket-alpha-scanner", price: priceOf("polymarket"), paid: polymarket?.paid ?? false, txHash: polymarket?.txHash },
-        { service: "defi-alpha-scanner", price: priceOf("defi"), paid: defi?.paid ?? false, txHash: defi?.txHash },
-        { service: "whale-agent", price: priceOf("whale"), paid: whale?.paid ?? false, txHash: whale?.txHash },
-      ],
+      breakdown: builtinBreakdown,
     };
 
     const report: CachedReport = {
@@ -168,6 +217,7 @@ function adaptInterval(confidence: number): void {
     emit("autopilot:adapted", record);
     log.info("autopilot adapted", { oldInterval, newInterval: currentIntervalMs, confidence });
   }
+  saveToStore();
 }
 
 function scheduleNext(): void {
@@ -182,11 +232,9 @@ function scheduleNext(): void {
 export function startAutopilot(): AutopilotStatus {
   if (running) return getAutopilotStatus();
   running = true;
-  currentIntervalMs = config.autopilot.baseIntervalMs;
-  huntCount = 0;
-  topicIndex = 0;
+  // Resume from persisted state (huntCount, topicIndex, currentIntervalMs, adaptations)
+  // Only reset transient UI state
   lastConfidence = null;
-  adaptations.length = 0;
 
   log.info("autopilot started", { interval: currentIntervalMs, topics: config.autopilot.topics });
   emit("autopilot:started", { interval: currentIntervalMs });

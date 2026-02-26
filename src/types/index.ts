@@ -1,6 +1,43 @@
 // ─── Service Keys ───────────────────────────────────────────────────────────
 
-export type ServiceKey = "sentiment" | "sentiment2" | "polymarket" | "defi" | "news" | "whale";
+export type ServiceKey = string;
+
+export const BUILTIN_KEYS = ["sentiment", "sentiment2", "polymarket", "defi", "news", "whale"] as const;
+export type BuiltinServiceKey = typeof BUILTIN_KEYS[number];
+
+// ─── Agent Registry ─────────────────────────────────────────────────────────
+
+export type AgentCategory = "sentiment" | "prediction" | "defi" | "news" | "onchain" | "other";
+
+export interface AgentRegistration {
+  key: string;
+  displayName: string;
+  url: string;
+  endpoint: string;
+  price: string;
+  description: string;
+  category: AgentCategory;
+}
+
+export interface AgentEntry extends AgentRegistration {
+  builtin: boolean;
+  online: boolean;
+  registeredAt: string;
+  lastHealthCheck: string | null;
+  healthFailures: number;
+}
+
+export interface ExternalAgentResponse {
+  service: string;
+  timestamp: string;
+  result: {
+    direction: Direction;
+    confidenceScore: number;
+    confidenceBasis?: string;
+    signals?: string[];
+    data?: Record<string, unknown>;
+  };
+}
 
 // ─── Confidence Staking ─────────────────────────────────────────────────────
 
@@ -143,9 +180,12 @@ export interface NewsArticle {
 
 export interface CryptoPanicPost {
   title: string;
+  description?: string;
   published_at: string;
   url: string;
-  source: { title: string; domain: string };
+  original_url?: string;
+  source: { title: string; domain: string; region?: string };
+  votes?: { positive: number; negative: number; important: number };
   metadata?: { description?: string };
 }
 
@@ -204,7 +244,7 @@ export interface X402FetchResult {
 
 export interface ServiceResponse {
   ok: boolean;
-  data: { result?: SentimentResult | PolymarketResult | DefiResult | NewsResult | WhaleResult } | null;
+  data: { result?: SentimentResult | PolymarketResult | DefiResult | NewsResult | WhaleResult | Record<string, unknown> } | null;
   paid: boolean;
   txHash?: string;
   demoMode?: boolean;
@@ -242,6 +282,7 @@ export interface PaymentLog {
 export interface AlphaSynthesis {
   confidence: string;
   weightedConfidence: number;
+  consensusStrength: number;
   recommendation: string;
   signals: string[];
   warnings?: string[];
@@ -255,6 +296,7 @@ export interface AlphaSynthesis {
     defi: { asset: string; action: string; change24h: string } | null;
     news: { topHeadline: string; articleCount: number } | null;
     whale: { signal: string; whaleCount: number; totalVolume: string } | null;
+    external?: Record<string, { direction: Direction; confidence: number; signals: string[] } | null>;
   };
 }
 
@@ -275,6 +317,7 @@ export interface SettledResult {
   polymarket: ServiceResponse | null;
   defi: ServiceResponse | null;
   whale: ServiceResponse | null;
+  external: Record<string, ServiceResponse | null>;
   warnings: string[];
   competitionResult?: CompetitionResult;
 }
