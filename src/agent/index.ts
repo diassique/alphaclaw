@@ -1,9 +1,6 @@
 import express from "express";
 import compression from "compression";
 import helmet from "helmet";
-import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
 import { networkInterfaces } from "os";
 import { conditionalPaywall } from "../lib/paywall.js";
 import { createLogger } from "../lib/logger.js";
@@ -17,15 +14,16 @@ import { registerReputationRoutes } from "./routes/reputation.js";
 import { registerAutopilotRoutes } from "./routes/autopilot.js";
 import { registerMemoryRoutes } from "./routes/memory.js";
 import { registerTelegramRoutes } from "./routes/telegram.js";
-import { getReputation } from "./reputation.js";
+import { registerPageRoutes } from "./routes/pages.js";
+import { getReputation, loadReputation } from "./reputation.js";
 import { setReputationProvider } from "../config/services.js";
 import { loadMemory } from "./memory.js";
+import { loadCircuits } from "./circuit-breaker.js";
+import { loadReports } from "./report-cache.js";
+import { loadAutopilot, stopAutopilot } from "./autopilot.js";
+import { flushAllStores, destroyAllStores } from "../lib/store.js";
 import { initTelegram } from "./telegram.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// Wire reputation into dynamic pricing
-setReputationProvider((key) => getReputation(key).score);
 const log = createLogger("coordinator");
 const port = config.ports.agent;
 
@@ -51,23 +49,20 @@ conditionalPaywall(app, config.walletAddress, {
   },
 }, config.facilitatorUrl);
 
-// ─── Dashboard ───────────────────────────────────────────────────────────────
+// ─── Pages (dashboard, hunt, autopilot, etc.) ───────────────────────────────
 
-app.get("/logo.svg", (_req, res) => {
-  res.setHeader("Content-Type", "image/svg+xml");
-  res.setHeader("Cache-Control", "public, max-age=86400");
-  res.send(readFileSync(join(__dirname, "../../claw.svg")));
-});
+registerPageRoutes(app);
 
-app.get("/", (_req, res) => {
-  res.setHeader("Content-Type", "text/html");
-  res.send(readFileSync(join(__dirname, "dashboard.html")));
-});
+// ─── Load persistent state (order matters: reputation before setReputationProvider) ─
+
+loadMemory();
+loadReputation();
+loadCircuits();
+loadReports();
+loadAutopilot();
+setReputationProvider((key) => getReputation(key).score);
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
-
-// Load persistent state
-loadMemory();
 
 registerHuntRoutes(app);
 registerStreamRoutes(app);
@@ -112,6 +107,10 @@ const server = app.listen(port, "0.0.0.0", () => {
 // Graceful shutdown
 const shutdown = (signal: string) => {
   log.info(`${signal} received — shutting down coordinator`);
+  stopAutopilot();
+  flushAllStores();
+  destroyAllStores();
+  log.info("all stores flushed");
   server.close(() => {
     log.info("coordinator server closed");
     process.exit(0);

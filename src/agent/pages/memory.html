@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaClaw — Memory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/dashboard.css" />
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+
+  <nav>
+    <a class="logo" href="/">
+      <div class="logo-icon"><img src="/logo.svg" alt="AlphaClaw" /></div>
+      <div>AlphaClaw<div class="logo-sub">AI Alpha Marketplace</div></div>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link" href="/">Dashboard</a>
+      <a class="nav-link" href="/hunt-page">Hunt</a>
+      <a class="nav-link" href="/autopilot-page">Autopilot</a>
+      <a class="nav-link" href="/reputation-page">Reputation</a>
+      <a class="nav-link" href="/memory-page">Memory</a>
+      <a class="nav-link" href="/network-page">Network</a>
+      <a class="nav-link" href="/reports-page">Reports</a>
+      <a class="nav-link" href="/telegram-page">Telegram</a>
+    </div>
+    <div class="nav-right">
+      <span class="tg-badge tg-off" id="tg-badge" title="Telegram Bot">TG OFF</span>
+      <span class="badge badge-green"><span class="dot"></span> LIVE</span>
+      <span class="badge badge-purple">Base Sepolia &middot; x402</span>
+    </div>
+  </nav>
+
+  <main>
+    <div class="page-header">
+      <h1>Agent <span>Memory</span></h1>
+      <p>Pattern recognition, memory entries, and prediction verification.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="memory-panel">
+      <div class="memory-stats-grid" id="memory-stats">
+        <div class="memory-stat"><div class="memory-stat-val" id="mem-entries">0</div><div class="memory-stat-label">Entries</div></div>
+        <div class="memory-stat"><div class="memory-stat-val" id="mem-verified">0</div><div class="memory-stat-label">Verified</div></div>
+        <div class="memory-stat"><div class="memory-stat-val" id="mem-patterns">0</div><div class="memory-stat-label">Patterns</div></div>
+        <div class="memory-stat"><div class="memory-stat-val" id="mem-active">0</div><div class="memory-stat-label">Active</div></div>
+      </div>
+      <div class="memory-patterns" id="memory-patterns">
+        <div class="pattern-col"><h4>Top Patterns</h4><div id="mem-top">&mdash;</div></div>
+        <div class="pattern-col"><h4>Weak Patterns</h4><div id="mem-weak">&mdash;</div></div>
+      </div>
+    </div>
+
+    <!-- Accuracy Distribution -->
+    <div class="section-title">Accuracy Distribution</div>
+    <div class="panel" style="margin-bottom:2rem;" id="accuracy-panel">
+      <div id="accuracy-dist" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <span style="color:var(--text3);font-size:.8rem;">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Memory Entries -->
+    <div class="section-title">Memory Entries</div>
+    <div class="panel" style="margin-bottom:2rem;overflow-x:auto;">
+      <table class="data-table" id="entries-table">
+        <thead><tr><th>ID</th><th>Topic</th><th>Time</th><th>Confidence</th><th>Recommendation</th><th>Verified</th><th>Actions</th></tr></thead>
+        <tbody id="entries-body"><tr><td colspan="7" style="text-align:center;color:var(--text3);">Loading entries...</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Status Strip -->
+  <div class="status-strip" id="status-strip">
+    <div class="status-strip-left">
+      <div class="status-indicator loading" id="strip-indicator"></div>
+      <span class="status-label loading" id="strip-label">Checking...</span>
+    </div>
+    <div class="status-dots" id="strip-dots"></div>
+    <div class="status-meta">
+      <span id="strip-latency">--</span> &middot; <span id="strip-checked">checking</span> &middot; <span class="status-countdown" id="strip-countdown"></span>
+    </div>
+  </div>
+
+  <footer>
+    <span>AlphaClaw Network &middot; Base Sepolia &middot; x402</span>
+    <span>SURGE x OpenClaw Hackathon 2026</span>
+  </footer>
+
+  <script src="/dashboard.js"></script>
+  <script>
+    const POLL_INTERVAL = 10000;
+
+    function renderPatterns(patterns, elId, cls) {
+      const el = document.getElementById(elId);
+      if (!patterns || !patterns.length) {
+        el.innerHTML = '<div style="color:var(--text3);font-size:.7rem;">No patterns yet</div>';
+        return;
+      }
+      el.innerHTML = patterns.map(p => `
+        <div class="pattern-item">
+          <span class="pattern-combo" title="${p.combo}">${p.combo}</span>
+          <span class="pattern-acc ${cls}">${(p.accuracy * 100).toFixed(0)}%</span>
+          <span class="pattern-adj">${p.adjustment > 0 ? '+' : ''}${p.adjustment}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderAccuracyDist(topPatterns, weakPatterns) {
+      const all = [...(topPatterns || []), ...(weakPatterns || [])];
+      if (!all.length) {
+        document.getElementById('accuracy-dist').innerHTML = '<span style="color:var(--text3);font-size:.8rem;">No patterns to display</span>';
+        return;
+      }
+      const buckets = { '90-100': 0, '70-89': 0, '50-69': 0, '30-49': 0, '0-29': 0 };
+      all.forEach(p => {
+        const pct = p.accuracy * 100;
+        if (pct >= 90) buckets['90-100']++;
+        else if (pct >= 70) buckets['70-89']++;
+        else if (pct >= 50) buckets['50-69']++;
+        else if (pct >= 30) buckets['30-49']++;
+        else buckets['0-29']++;
+      });
+      const max = Math.max(...Object.values(buckets), 1);
+      const colors = { '90-100': 'var(--green)', '70-89': 'var(--accent2)', '50-69': 'var(--yellow)', '30-49': 'var(--red)', '0-29': 'var(--red)' };
+      document.getElementById('accuracy-dist').innerHTML = Object.entries(buckets).map(([range, count]) => `
+        <div style="flex:1;min-width:80px;text-align:center;">
+          <div style="height:60px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:.25rem;">
+            <div style="width:30px;height:${(count/max)*100}%;background:${colors[range]};border-radius:4px 4px 0 0;min-height:2px;"></div>
+          </div>
+          <div style="font-family:var(--mono);font-size:.7rem;color:var(--text2);">${range}%</div>
+          <div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);">${count}</div>
+        </div>
+      `).join('');
+    }
+
+    async function loadMemoryStats() {
+      try {
+        const r = await fetch('/memory/stats');
+        const d = await r.json();
+        document.getElementById('mem-entries').textContent = d.totalEntries;
+        document.getElementById('mem-verified').textContent = d.verifiedEntries;
+        document.getElementById('mem-patterns').textContent = d.patterns;
+        document.getElementById('mem-active').textContent = d.activePatterns;
+        renderPatterns(d.topPatterns, 'mem-top', 'good');
+        renderPatterns(d.weakPatterns, 'mem-weak', 'weak');
+        renderAccuracyDist(d.topPatterns, d.weakPatterns);
+      } catch {}
+    }
+
+    async function loadEntries() {
+      try {
+        const r = await fetch('/memory/entries?limit=50');
+        const entries = await r.json();
+        const list = Array.isArray(entries) ? entries : (entries.entries || []);
+        if (!list.length) {
+          document.getElementById('entries-body').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);">No entries yet \u2014 run a hunt to create one</td></tr>';
+          return;
+        }
+        document.getElementById('entries-body').innerHTML = list.map(e => {
+          const verified = e.verified ? (e.outcome === 'correct' ? '<span style="color:var(--green)">Correct</span>' : '<span style="color:var(--red)">Incorrect</span>') : '<span style="color:var(--text3)">Pending</span>';
+          const actions = !e.verified ? `
+            <button class="btn-sm btn-green" onclick="verifyEntry('${e.id}','correct')" style="font-size:.65rem;padding:.2rem .5rem;">Correct</button>
+            <button class="btn-sm btn-red" onclick="verifyEntry('${e.id}','incorrect')" style="font-size:.65rem;padding:.2rem .5rem;">Wrong</button>
+          ` : '\u2014';
+          return `<tr>
+            <td style="font-size:.7rem;color:var(--text3)">${(e.id || '').slice(0,8)}</td>
+            <td style="color:var(--text);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.topic || '\u2014'}</td>
+            <td style="font-size:.7rem;">${e.timestamp ? timeAgo(e.timestamp) : '\u2014'}</td>
+            <td style="color:var(--accent2)">${e.confidence || '\u2014'}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.recommendation || '\u2014'}</td>
+            <td>${verified}</td>
+            <td style="white-space:nowrap;">${actions}</td>
+          </tr>`;
+        }).join('');
+      } catch {}
+    }
+
+    async function verifyEntry(id, outcome) {
+      try {
+        const r = await fetch('/memory/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, outcome })
+        });
+        if (r.ok) {
+          loadEntries();
+          loadMemoryStats();
+        }
+      } catch {}
+    }
+
+    loadStatusStrip();
+    loadTelegram();
+    loadMemoryStats();
+    loadEntries();
+    setInterval(() => { loadMemoryStats(); loadEntries(); }, POLL_INTERVAL);
+  </script>
+</body>
+</html>

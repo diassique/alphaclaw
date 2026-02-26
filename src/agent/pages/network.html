@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaClaw — Network</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/dashboard.css" />
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+
+  <nav>
+    <a class="logo" href="/">
+      <div class="logo-icon"><img src="/logo.svg" alt="AlphaClaw" /></div>
+      <div>AlphaClaw<div class="logo-sub">AI Alpha Marketplace</div></div>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link" href="/">Dashboard</a>
+      <a class="nav-link" href="/hunt-page">Hunt</a>
+      <a class="nav-link" href="/autopilot-page">Autopilot</a>
+      <a class="nav-link" href="/reputation-page">Reputation</a>
+      <a class="nav-link" href="/memory-page">Memory</a>
+      <a class="nav-link" href="/network-page">Network</a>
+      <a class="nav-link" href="/reports-page">Reports</a>
+      <a class="nav-link" href="/telegram-page">Telegram</a>
+    </div>
+    <div class="nav-right">
+      <span class="tg-badge tg-off" id="tg-badge" title="Telegram Bot">TG OFF</span>
+      <span class="badge badge-green"><span class="dot"></span> LIVE</span>
+      <span class="badge badge-purple">Base Sepolia &middot; x402</span>
+    </div>
+  </nav>
+
+  <main>
+    <div class="page-header">
+      <h1><span>Network</span> Status</h1>
+      <p>Service health, circuit breakers, dynamic pricing, and architecture overview.</p>
+    </div>
+
+    <!-- Network Banner -->
+    <div class="panel" id="net-banner" style="text-align:center;margin-bottom:2rem;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:.75rem;">
+        <div class="status-indicator loading" id="net-indicator" style="width:12px;height:12px;"></div>
+        <span style="font-size:1.2rem;font-weight:700;font-family:var(--mono);" id="net-status">Checking...</span>
+      </div>
+      <div style="font-size:.8rem;color:var(--text3);margin-top:.5rem;" id="net-summary"></div>
+    </div>
+
+    <!-- Service Cards -->
+    <div class="section-title">Services</div>
+    <div class="services-grid" id="services-grid" style="margin-bottom:2rem;">
+      <div class="service-card"><div class="service-status status-off"></div><div class="service-info"><div class="service-name">Loading...</div></div></div>
+    </div>
+
+    <!-- Latency Comparison -->
+    <div class="section-title">Latency Comparison</div>
+    <div class="panel" style="margin-bottom:2rem;" id="latency-panel">
+      <div id="latency-bars"><span style="color:var(--text3);font-size:.8rem;">Loading...</span></div>
+    </div>
+
+    <!-- Circuit Breakers -->
+    <div class="section-title">Circuit Breakers</div>
+    <div class="panel" style="margin-bottom:2rem;">
+      <div class="circuit-grid" id="circuit-grid">
+        <div style="color:var(--text3);font-size:.8rem;grid-column:1/-1;text-align:center;padding:.75rem;">Loading circuits...</div>
+      </div>
+    </div>
+
+    <!-- Dynamic Pricing -->
+    <div class="section-title">Dynamic Pricing</div>
+    <div class="panel" style="margin-bottom:2rem;overflow-x:auto;">
+      <table class="data-table" id="pricing-table">
+        <thead><tr><th>Service</th><th>Base Price</th><th>Effective Price</th><th>Multiplier</th><th>Reputation</th></tr></thead>
+        <tbody id="pricing-body"><tr><td colspan="5" style="text-align:center;color:var(--text3);">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Economic Overview -->
+    <div class="section-title">Economic Overview</div>
+    <div class="stats" style="margin-bottom:2rem;">
+      <div class="stat"><div class="stat-val" id="eco-buy">&mdash;</div><div class="stat-label">Total Buy Cost</div></div>
+      <div class="stat"><div class="stat-val">$0.050</div><div class="stat-label">Sell Price</div></div>
+      <div class="stat"><div class="stat-val" id="eco-margin" style="color:var(--green);">&mdash;</div><div class="stat-label">Margin / Hunt</div></div>
+      <div class="stat"><div class="stat-val" id="eco-reports">&mdash;</div><div class="stat-label">Cached Reports</div></div>
+    </div>
+
+    <!-- Architecture Diagram -->
+    <div class="section-title">Architecture</div>
+    <div class="panel" style="margin-bottom:2rem;">
+      <div style="text-align:center;padding:1rem;">
+        <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5rem;font-family:var(--mono);font-size:.75rem;">
+          <!-- Client -->
+          <div style="background:var(--bg3);border:1px solid var(--accent);border-radius:10px;padding:.75rem 1.5rem;color:var(--accent2);font-weight:700;">Client &rarr; $0.050</div>
+          <div style="width:2px;height:20px;background:var(--border2);"></div>
+          <!-- Coordinator -->
+          <div style="background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(6,182,212,.1));border:2px solid var(--accent);border-radius:14px;padding:1rem 2rem;text-align:center;">
+            <div style="font-weight:700;font-size:.9rem;color:var(--text);margin-bottom:.25rem;">AlphaClaw Coordinator</div>
+            <div style="font-size:.7rem;color:var(--text3);">Port 5000 &middot; Synthesize + Stake + Cache</div>
+          </div>
+          <div style="width:2px;height:10px;background:var(--border2);"></div>
+          <!-- Services row -->
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center;">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;text-align:center;min-width:100px;">
+              <div style="color:var(--accent2);font-weight:600;">News</div>
+              <div style="color:var(--text3);font-size:.65rem;">:4004 &middot; $0.001</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;text-align:center;min-width:100px;">
+              <div style="color:var(--accent2);font-weight:600;">Sentiment</div>
+              <div style="color:var(--text3);font-size:.65rem;">:4001 &middot; $0.001</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;text-align:center;min-width:100px;">
+              <div style="color:var(--accent2);font-weight:600;">Polymarket</div>
+              <div style="color:var(--text3);font-size:.65rem;">:4002 &middot; $0.020</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;text-align:center;min-width:100px;">
+              <div style="color:var(--accent2);font-weight:600;">DeFi</div>
+              <div style="color:var(--text3);font-size:.65rem;">:4003 &middot; $0.015</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;text-align:center;min-width:100px;">
+              <div style="color:var(--accent2);font-weight:600;">Whale</div>
+              <div style="color:var(--text3);font-size:.65rem;">:4005 &middot; $0.002</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Status Strip -->
+  <div class="status-strip" id="status-strip">
+    <div class="status-strip-left">
+      <div class="status-indicator loading" id="strip-indicator"></div>
+      <span class="status-label loading" id="strip-label">Checking...</span>
+    </div>
+    <div class="status-dots" id="strip-dots"></div>
+    <div class="status-meta">
+      <span id="strip-latency">--</span> &middot; <span id="strip-checked">checking</span> &middot; <span class="status-countdown" id="strip-countdown"></span>
+    </div>
+  </div>
+
+  <footer>
+    <span>AlphaClaw Network &middot; Base Sepolia &middot; x402</span>
+    <span>SURGE x OpenClaw Hackathon 2026</span>
+  </footer>
+
+  <script src="/dashboard.js"></script>
+  <script>
+    const POLL_INTERVAL = 10000;
+
+    function updateBanner(data) {
+      const ind = document.getElementById('net-indicator');
+      const status = document.getElementById('net-status');
+      const summary = document.getElementById('net-summary');
+      const cls = data.ok ? 'ok' : data.onlineCount > 0 ? 'degraded' : 'offline';
+      ind.className = `status-indicator ${cls}`;
+      ind.style.width = '12px'; ind.style.height = '12px';
+      const labels = { ok: 'FULLY OPERATIONAL', degraded: 'DEGRADED', offline: 'OFFLINE' };
+      status.textContent = labels[cls] || data.marketplaceStatus;
+      status.style.color = cls === 'ok' ? 'var(--green)' : cls === 'degraded' ? 'var(--yellow)' : 'var(--red)';
+      summary.textContent = `${data.onlineCount}/${data.totalCount} services online \u00b7 avg ${data.avgLatencyMs}ms \u00b7 checked ${new Date(data.checkedAt).toLocaleTimeString('en',{hour12:false})}`;
+    }
+
+    function updateServicesGrid(data) {
+      document.getElementById('services-grid').innerHTML = data.services.map(s => {
+        const statusCls = s.status === 'ok' ? 'ok' : s.status === 'error' ? 'err' : 'off';
+        const latCls = latencyClass(s.latencyMs);
+        return `<div class="service-card"><div class="service-status status-${statusCls}"></div><div class="service-info"><div class="service-name">${s.name}</div><div class="service-details"><span class="service-price">${s.price||'coordinator'}</span><span class="service-latency ${latCls}">${s.latencyMs}ms</span><span class="service-port">:${s.port}</span></div></div></div>`;
+      }).join('');
+    }
+
+    function updateLatencyBars(data) {
+      const max = Math.max(...data.services.map(s => s.latencyMs), 1);
+      document.getElementById('latency-bars').innerHTML = data.services.map(s => {
+        const pct = (s.latencyMs / max) * 100;
+        const cls = latencyClass(s.latencyMs);
+        return `<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
+          <span style="min-width:140px;font-size:.75rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name.replace('alphaclaw-','')}</span>
+          <div class="latency-bar-outer" style="flex:1;"><div class="latency-bar-fill ${cls}" style="width:${pct}%"></div></div>
+          <span style="min-width:50px;text-align:right;font-family:var(--mono);font-size:.7rem;color:var(--text3)">${s.latencyMs}ms</span>
+        </div>`;
+      }).join('');
+    }
+
+    async function loadHealth() {
+      const data = await loadStatusStrip();
+      if (!data) return;
+      updateBanner(data);
+      updateServicesGrid(data);
+      updateLatencyBars(data);
+    }
+
+    async function loadCircuits() {
+      try {
+        const r = await fetch('/circuits');
+        const d = await r.json();
+        const keys = Object.keys(d);
+        const grid = document.getElementById('circuit-grid');
+        if (!keys.length) {
+          grid.innerHTML = '<div style="color:var(--text3);font-size:.8rem;grid-column:1/-1;text-align:center;padding:.75rem;">No circuit data yet</div>';
+          return;
+        }
+        grid.innerHTML = keys.map(k => {
+          const c = d[k];
+          const ts = [];
+          if (c.lastFailure) ts.push(`Last fail: ${timeAgo(c.lastFailure)}`);
+          if (c.lastSuccess) ts.push(`Last ok: ${timeAgo(c.lastSuccess)}`);
+          if (c.openedAt) ts.push(`Opened: ${timeAgo(c.openedAt)}`);
+          return `<div class="circuit-card circuit-${c.state}"><div class="circuit-dot ${c.state}"></div><div class="circuit-info"><div class="circuit-name">${CIRCUIT_LABELS[k]||k}</div><div class="circuit-state">${c.state} \u00b7 ${c.failures} fails</div>${ts.length ? `<div style="font-size:.6rem;color:var(--text3);margin-top:.2rem;">${ts.join(' \u00b7 ')}</div>` : ''}</div></div>`;
+        }).join('');
+      } catch {}
+    }
+
+    async function loadPricing() {
+      try {
+        const r = await fetch('/ping');
+        const d = await r.json();
+        const dp = d.dynamicPricing || [];
+        document.getElementById('pricing-body').innerHTML = dp.map(p => `<tr>
+          <td style="color:var(--text)">${SERVICE_LABELS[p.service]||p.service}</td>
+          <td>${p.basePrice}</td>
+          <td style="color:var(--accent2)">${p.effectivePrice}</td>
+          <td>${p.multiplier.toFixed(2)}x</td>
+          <td>${(p.reputation*100).toFixed(0)}%</td>
+        </tr>`).join('') + `<tr style="border-top:2px solid var(--border2)"><td style="color:var(--text);font-weight:700">Total</td><td></td><td style="color:var(--green);font-weight:700">${d.totalBuyCost}</td><td></td><td></td></tr>`;
+
+        document.getElementById('eco-buy').textContent = d.totalBuyCost;
+        document.getElementById('eco-margin').textContent = d.margin.replace(' per hunt','');
+        document.getElementById('eco-reports').textContent = String(d.cachedReports);
+      } catch {}
+    }
+
+    async function pollAll() {
+      await Promise.all([loadHealth(), loadCircuits(), loadPricing(), loadTelegram()]);
+      restartCountdown(POLL_INTERVAL);
+    }
+
+    pollAll();
+    setInterval(pollAll, POLL_INTERVAL);
+  </script>
+</body>
+</html>

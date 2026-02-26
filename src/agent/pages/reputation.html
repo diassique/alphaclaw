@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaClaw — Reputation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/dashboard.css" />
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+
+  <nav>
+    <a class="logo" href="/">
+      <div class="logo-icon"><img src="/logo.svg" alt="AlphaClaw" /></div>
+      <div>AlphaClaw<div class="logo-sub">AI Alpha Marketplace</div></div>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link" href="/">Dashboard</a>
+      <a class="nav-link" href="/hunt-page">Hunt</a>
+      <a class="nav-link" href="/autopilot-page">Autopilot</a>
+      <a class="nav-link" href="/reputation-page">Reputation</a>
+      <a class="nav-link" href="/memory-page">Memory</a>
+      <a class="nav-link" href="/network-page">Network</a>
+      <a class="nav-link" href="/reports-page">Reports</a>
+      <a class="nav-link" href="/telegram-page">Telegram</a>
+    </div>
+    <div class="nav-right">
+      <span class="tg-badge tg-off" id="tg-badge" title="Telegram Bot">TG OFF</span>
+      <span class="badge badge-green"><span class="dot"></span> LIVE</span>
+      <span class="badge badge-purple">Base Sepolia &middot; x402</span>
+    </div>
+  </nav>
+
+  <main>
+    <div class="page-header">
+      <h1>Agent <span>Reputation</span></h1>
+      <p>Reputation scores, staking results, and agent competition tracking.</p>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="stats" id="rep-stats" style="margin-bottom:2rem;">
+      <div class="stat"><div class="stat-val" id="stat-avg-rep">&mdash;</div><div class="stat-label">Avg Reputation</div></div>
+      <div class="stat"><div class="stat-val" id="stat-total-pnl">&mdash;</div><div class="stat-label">Total P&amp;L</div></div>
+      <div class="stat"><div class="stat-val" id="stat-total-hunts">&mdash;</div><div class="stat-label">Total Hunts</div></div>
+      <div class="stat"><div class="stat-val" id="stat-total-correct">&mdash;</div><div class="stat-label">Correct Calls</div></div>
+    </div>
+
+    <!-- Agent Score Cards -->
+    <div class="section-title">Agent Scores</div>
+    <div class="rep-grid" id="rep-grid">
+      <div style="color:var(--text3);font-size:.85rem;grid-column:1/-1;padding:1rem;text-align:center;">Loading reputations...</div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="section-title">Leaderboard</div>
+    <div class="panel" style="margin-bottom:2rem;overflow-x:auto;">
+      <table class="data-table" id="leaderboard">
+        <thead><tr><th>#</th><th>Agent</th><th>Score</th><th>P&amp;L</th><th>Correct</th><th>Hunts</th></tr></thead>
+        <tbody id="leaderboard-body"><tr><td colspan="6" style="text-align:center;color:var(--text3);">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Score History -->
+    <div class="section-title">Score History</div>
+    <div class="panel" style="margin-bottom:2rem;overflow-x:auto;">
+      <table class="data-table" id="history-table">
+        <thead><tr><th>Agent</th><th>History (recent &rarr; oldest)</th></tr></thead>
+        <tbody id="history-body"><tr><td colspan="2" style="text-align:center;color:var(--text3);">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Competition -->
+    <div class="section-title">Sentiment Competition</div>
+    <div class="comp-card visible" id="comp-card" style="display:block;">
+      <div class="comp-matchup">
+        <div class="comp-agent" id="comp-agent1">
+          <div class="comp-agent-name">Sentiment v1</div>
+          <div class="comp-agent-ratio" id="comp-ratio1">&mdash;</div>
+          <div style="font-size:.7rem;color:var(--text3);margin-top:.25rem;" id="comp-score1"></div>
+        </div>
+        <div class="comp-vs">VS</div>
+        <div class="comp-agent" id="comp-agent2">
+          <div class="comp-agent-name">Sentiment v2</div>
+          <div class="comp-agent-ratio" id="comp-ratio2">&mdash;</div>
+          <div style="font-size:.7rem;color:var(--text3);margin-top:.25rem;" id="comp-score2"></div>
+        </div>
+      </div>
+      <div class="comp-reason" id="comp-reason">Run a hunt to see competition results</div>
+    </div>
+
+    <!-- Reset Button -->
+    <div style="text-align:center;margin-bottom:2rem;">
+      <button class="btn btn-secondary" onclick="resetReputation()" style="border-color:var(--red);color:var(--red);">Reset All Reputations</button>
+    </div>
+  </main>
+
+  <!-- Status Strip -->
+  <div class="status-strip" id="status-strip">
+    <div class="status-strip-left">
+      <div class="status-indicator loading" id="strip-indicator"></div>
+      <span class="status-label loading" id="strip-label">Checking...</span>
+    </div>
+    <div class="status-dots" id="strip-dots"></div>
+    <div class="status-meta">
+      <span id="strip-latency">--</span> &middot; <span id="strip-checked">checking</span> &middot; <span class="status-countdown" id="strip-countdown"></span>
+    </div>
+  </div>
+
+  <footer>
+    <span>AlphaClaw Network &middot; Base Sepolia &middot; x402</span>
+    <span>SURGE x OpenClaw Hackathon 2026</span>
+  </footer>
+
+  <script src="/dashboard.js"></script>
+  <script>
+    const POLL_INTERVAL = 10000;
+
+    function renderRepGrid(agents) {
+      const grid = document.getElementById('rep-grid');
+      if (!agents || !agents.length) {
+        grid.innerHTML = '<div style="color:var(--text3);font-size:.85rem;grid-column:1/-1;padding:1rem;text-align:center;">No reputation data</div>';
+        return;
+      }
+      grid.innerHTML = agents.map(a => {
+        const pct = (a.score * 100).toFixed(1);
+        const pnlCls = a.pnl >= 0 ? 'rep-pnl-pos' : 'rep-pnl-neg';
+        const pnlSign = a.pnl >= 0 ? '+' : '';
+        return `
+          <div class="rep-card" id="rep-${a.key}">
+            <div class="rep-name">${SERVICE_LABELS[a.key] || a.key}</div>
+            <div class="rep-score">${pct}%</div>
+            <div class="rep-bar-outer"><div class="rep-bar-fill" style="width:${pct}%"></div></div>
+            ${sparklineSVG(a.history, 120, 24)}
+            <div class="rep-stats">
+              <span class="${pnlCls}">${pnlSign}${a.pnl.toFixed(1)} P&L</span>
+              <span>${a.correct}/${a.hunts}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderLeaderboard(agents) {
+      if (!agents || !agents.length) return;
+      const sorted = [...agents].sort((a, b) => b.score - a.score);
+      document.getElementById('leaderboard-body').innerHTML = sorted.map((a, i) => {
+        const pnlColor = a.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+        return `<tr>
+          <td style="color:${i === 0 ? 'var(--accent2)' : 'var(--text3)'};font-weight:700">${i + 1}</td>
+          <td style="color:var(--text)">${SERVICE_LABELS[a.key] || a.key}</td>
+          <td style="color:var(--accent2)">${(a.score * 100).toFixed(1)}%</td>
+          <td style="color:${pnlColor}">${a.pnl >= 0 ? '+' : ''}${a.pnl.toFixed(1)}</td>
+          <td>${a.correct}</td>
+          <td>${a.hunts}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderHistory(agents) {
+      if (!agents || !agents.length) return;
+      document.getElementById('history-body').innerHTML = agents.map(a => {
+        const hist = (a.history || []).map(v => `<span style="display:inline-block;padding:.1rem .3rem;margin:.1rem;border-radius:4px;font-size:.7rem;background:var(--bg3)">${(v * 100).toFixed(0)}%</span>`).join('');
+        return `<tr><td style="color:var(--text)">${SERVICE_LABELS[a.key] || a.key}</td><td>${hist || '\u2014'}</td></tr>`;
+      }).join('');
+    }
+
+    function updateSummary(agents) {
+      if (!agents || !agents.length) return;
+      const avg = agents.reduce((s, a) => s + a.score, 0) / agents.length;
+      const totalPnl = agents.reduce((s, a) => s + a.pnl, 0);
+      const totalHunts = agents.reduce((s, a) => s + a.hunts, 0);
+      const totalCorrect = agents.reduce((s, a) => s + a.correct, 0);
+
+      document.getElementById('stat-avg-rep').textContent = (avg * 100).toFixed(0) + '%';
+      const pnlEl = document.getElementById('stat-total-pnl');
+      pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + totalPnl.toFixed(1);
+      pnlEl.style.cssText = `color:${totalPnl >= 0 ? 'var(--green)' : 'var(--red)'}`;
+      document.getElementById('stat-total-hunts').textContent = String(totalHunts);
+      document.getElementById('stat-total-correct').textContent = String(totalCorrect);
+
+      // Competition from reputation data
+      const s1 = agents.find(a => a.key === 'sentiment');
+      const s2 = agents.find(a => a.key === 'sentiment2');
+      if (s1 && s2) {
+        document.getElementById('comp-ratio1').textContent = (s1.score * 100).toFixed(0) + '%';
+        document.getElementById('comp-ratio2').textContent = (s2.score * 100).toFixed(0) + '%';
+        document.getElementById('comp-score1').textContent = `P&L: ${s1.pnl >= 0 ? '+' : ''}${s1.pnl.toFixed(1)} \u00b7 ${s1.correct}/${s1.hunts}`;
+        document.getElementById('comp-score2').textContent = `P&L: ${s2.pnl >= 0 ? '+' : ''}${s2.pnl.toFixed(1)} \u00b7 ${s2.correct}/${s2.hunts}`;
+        if (s1.score > s2.score) {
+          document.getElementById('comp-agent1').className = 'comp-agent winner';
+          document.getElementById('comp-agent2').className = 'comp-agent loser';
+          document.getElementById('comp-reason').textContent = `v1 leads: ${(s1.score*100).toFixed(0)}% vs ${(s2.score*100).toFixed(0)}%`;
+        } else if (s2.score > s1.score) {
+          document.getElementById('comp-agent1').className = 'comp-agent loser';
+          document.getElementById('comp-agent2').className = 'comp-agent winner';
+          document.getElementById('comp-reason').textContent = `v2 leads: ${(s2.score*100).toFixed(0)}% vs ${(s1.score*100).toFixed(0)}%`;
+        } else {
+          document.getElementById('comp-reason').textContent = 'Tied';
+        }
+      }
+    }
+
+    async function loadReputation() {
+      try {
+        const r = await fetch('/reputation');
+        const d = await r.json();
+        renderRepGrid(d.agents);
+        renderLeaderboard(d.agents);
+        renderHistory(d.agents);
+        updateSummary(d.agents);
+      } catch {}
+    }
+
+    async function resetReputation() {
+      if (!confirm('Reset all agent reputations to 50%?')) return;
+      await fetch('/reputation/reset', { method: 'POST' });
+      loadReputation();
+    }
+
+    loadStatusStrip();
+    loadTelegram();
+    loadReputation();
+    setInterval(loadReputation, POLL_INTERVAL);
+  </script>
+</body>
+</html>

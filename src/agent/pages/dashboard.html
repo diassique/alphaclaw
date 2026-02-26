@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaClaw — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/dashboard.css" />
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+
+  <nav>
+    <a class="logo" href="/">
+      <div class="logo-icon"><img src="/logo.svg" alt="AlphaClaw" /></div>
+      <div>AlphaClaw<div class="logo-sub">AI Alpha Marketplace</div></div>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link" href="/">Dashboard</a>
+      <a class="nav-link" href="/hunt-page">Hunt</a>
+      <a class="nav-link" href="/autopilot-page">Autopilot</a>
+      <a class="nav-link" href="/reputation-page">Reputation</a>
+      <a class="nav-link" href="/memory-page">Memory</a>
+      <a class="nav-link" href="/network-page">Network</a>
+      <a class="nav-link" href="/reports-page">Reports</a>
+      <a class="nav-link" href="/telegram-page">Telegram</a>
+    </div>
+    <div class="nav-right">
+      <span class="tg-badge tg-off" id="tg-badge" title="Telegram Bot">TG OFF</span>
+      <span class="badge badge-green"><span class="dot"></span> LIVE</span>
+      <span class="badge badge-purple">Base Sepolia · x402</span>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> SURGE x OpenClaw Hackathon 2026</div>
+      <h1>The <span>Alpha Marketplace</span><br/>for AI Agents</h1>
+      <p>5 autonomous agents buy and sell intelligence via x402 micropayments. One query. Five data sources. Real on-chain transactions.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/hunt-page"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Hunt Alpha</a>
+        <a class="btn btn-secondary" href="/network-page"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Network Status</a>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats" id="stats">
+      <div class="stat"><div class="stat-val" id="stat-services">7</div><div class="stat-label">Active Agents</div></div>
+      <div class="stat"><div class="stat-val" id="stat-reports">&mdash;</div><div class="stat-label">Cached Reports</div></div>
+      <div class="stat"><div class="stat-val" id="stat-buy">$0.039</div><div class="stat-label">Buy Cost</div></div>
+      <div class="stat"><div class="stat-val">$0.050</div><div class="stat-label">Sell Price</div></div>
+      <div class="stat"><div class="stat-val" id="stat-margin" style="color:var(--green);">$0.011</div><div class="stat-label">Margin / Hunt</div></div>
+      <div class="stat"><div class="stat-val" id="stat-reputation" style="color:var(--accent2);">&mdash;</div><div class="stat-label">Avg Reputation</div></div>
+      <div class="stat"><div class="stat-val" id="stat-pnl" style="color:var(--text2);">&mdash;</div><div class="stat-label">Economy P&amp;L</div></div>
+    </div>
+
+    <!-- Quick Hunt -->
+    <div class="section-title"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></span> Quick Hunt</div>
+    <div class="hunt-box" style="margin-bottom:2rem;">
+      <div class="hunt-input-row">
+        <input class="hunt-input" id="hunt-topic" type="text" placeholder="e.g. Trump impeachment 2026, Fed rate cut, Bitcoin ETF..." />
+        <button class="btn btn-primary" id="hunt-btn" onclick="runHunt()">Hunt &rarr;</button>
+      </div>
+      <div class="quick-topics">
+        <span class="topic-chip" onclick="setTopic(this)">Trump impeachment</span>
+        <span class="topic-chip" onclick="setTopic(this)">Fed rate cut March</span>
+        <span class="topic-chip" onclick="setTopic(this)">Bitcoin ETF approval</span>
+        <span class="topic-chip" onclick="setTopic(this)">Ethereum DeFi</span>
+        <span class="topic-chip" onclick="setTopic(this)">Base L2 yields</span>
+      </div>
+      <div id="stream-output" style="display:none;margin-top:1rem;">
+        <div class="stream-log" id="stream-log" style="max-height:200px;"></div>
+        <div class="alpha-result" id="alpha-result">
+          <div class="alpha-header">
+            <div class="alpha-rec" id="alpha-rec"></div>
+            <div class="alpha-conf" id="alpha-conf"></div>
+          </div>
+          <div class="alpha-signals" id="alpha-signals"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Autopilot Compact -->
+    <div class="section-title"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93"/><path d="M8.24 9.93A4 4 0 0 1 12 2"/><rect x="3" y="14" width="18" height="7" rx="2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M10 17.5h4"/></svg></span> Autopilot <a href="/autopilot-page" style="font-size:.75rem;color:var(--accent2);text-decoration:none;margin-left:.5rem;">View full &rarr;</a></div>
+    <div class="panel" id="ap-compact" style="margin-bottom:2rem;">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <span class="ap-phase idle" id="ap-phase">IDLE</span>
+        <span style="font-family:var(--mono);font-size:.8rem;color:var(--text2);" id="ap-hunt-count">0 hunts</span>
+        <span style="font-family:var(--mono);font-size:.8rem;color:var(--text3);">Next: <span id="ap-next">&mdash;</span></span>
+        <span style="font-family:var(--mono);font-size:.8rem;color:var(--text3);">Interval: <span id="ap-interval">5m 0s</span></span>
+      </div>
+    </div>
+
+    <!-- Recent Reports -->
+    <div class="section-title"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Recent Reports <a href="/reports-page" style="font-size:.75rem;color:var(--accent2);text-decoration:none;margin-left:.5rem;">View all &rarr;</a></div>
+    <div id="recent-reports" style="margin-bottom:2rem;">
+      <div style="color:var(--text3);font-size:.85rem;padding:1rem;text-align:center;">No reports yet &mdash; run a hunt to generate one</div>
+    </div>
+
+    <!-- Services Mini Grid -->
+    <div class="section-title"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg></span> Service Health <a href="/network-page" style="font-size:.75rem;color:var(--accent2);text-decoration:none;margin-left:.5rem;">Details &rarr;</a></div>
+    <div class="services-grid" id="services-grid" style="margin-bottom:2rem;">
+      <div class="service-card"><div class="service-status status-off"></div><div class="service-info"><div class="service-name">Loading...</div></div></div>
+    </div>
+  </main>
+
+  <!-- Status Strip -->
+  <div class="status-strip" id="status-strip">
+    <div class="status-strip-left">
+      <div class="status-indicator loading" id="strip-indicator"></div>
+      <span class="status-label loading" id="strip-label">Checking...</span>
+    </div>
+    <div class="status-dots" id="strip-dots"></div>
+    <div class="status-meta">
+      <span id="strip-latency">--</span> &middot; <span id="strip-checked">checking</span> &middot; <span class="status-countdown" id="strip-countdown"></span>
+    </div>
+  </div>
+
+  <footer>
+    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> AlphaClaw Network &middot; Base Sepolia &middot; x402</span>
+    <span>SURGE x OpenClaw Hackathon 2026</span>
+  </footer>
+
+  <script src="/dashboard.js"></script>
+  <script>
+    const POLL_INTERVAL = 10000;
+
+    function setTopic(el) { document.getElementById('hunt-topic').value = el.textContent; }
+
+    function addLog(cls, icon, msg) {
+      const log = document.getElementById('stream-log');
+      const time = new Date().toLocaleTimeString('en', {hour12:false});
+      const line = document.createElement('div');
+      line.className = `log-line log-${cls}`;
+      line.innerHTML = `<span class="log-time">${time}</span><span>${icon} ${msg}</span>`;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function runHunt() {
+      const topic = document.getElementById('hunt-topic').value.trim();
+      if (!topic) { document.getElementById('hunt-topic').focus(); return; }
+      const btn = document.getElementById('hunt-btn');
+      btn.disabled = true; btn.textContent = 'Hunting\u2026';
+      const output = document.getElementById('stream-output');
+      const log = document.getElementById('stream-log');
+      const result = document.getElementById('alpha-result');
+      output.style.display = 'block'; result.style.display = 'none'; log.innerHTML = '';
+      addLog('ok', '\u26a1', `Starting hunt: "${topic}"`);
+
+      const sse = new EventSource(`/stream?topic=${encodeURIComponent(topic)}`);
+      sse.addEventListener('start', e => { const d = JSON.parse(e.data); addLog('ok', '\u26a1', `${d.services} agents ready`); });
+      sse.addEventListener('paying', e => { const d = JSON.parse(e.data); addLog('pay', '\ud83d\udcb3', `Paying ${d.service} ${d.amount}`); });
+      sse.addEventListener('result', e => { const d = JSON.parse(e.data); addLog('ok', '\u2705', `${d.service} done`); });
+      sse.addEventListener('alpha', e => {
+        const d = JSON.parse(e.data);
+        addLog('alpha', '\ud83c\udfaf', `${d.recommendation} (${d.confidence})`);
+        document.getElementById('alpha-rec').textContent = d.recommendation;
+        document.getElementById('alpha-conf').textContent = `Confidence: ${d.confidence}`;
+        document.getElementById('alpha-signals').innerHTML = (d.signals||[]).map(s => `<span class="signal-tag">${s}</span>`).join('');
+        result.style.display = 'block';
+      });
+      sse.addEventListener('cached', () => { setTimeout(loadReports, 500); });
+      sse.addEventListener('error', e => { try { addLog('err', '\u274c', JSON.parse(e.data).message); } catch {} });
+      sse.addEventListener('done', () => { sse.close(); btn.disabled = false; btn.textContent = 'Hunt \u2192'; });
+      sse.onerror = () => { sse.close(); btn.disabled = false; btn.textContent = 'Hunt \u2192'; };
+    }
+
+    // Services grid
+    function updateServicesGrid(data) {
+      const grid = document.getElementById('services-grid');
+      grid.innerHTML = data.services.map(s => {
+        const statusCls = s.status === 'ok' ? 'ok' : s.status === 'error' ? 'err' : 'off';
+        const latCls = latencyClass(s.latencyMs);
+        return `<div class="service-card"><div class="service-status status-${statusCls}"></div><div class="service-info"><div class="service-name">${s.name.replace('alphaclaw-','')}</div><div class="service-details"><span class="service-price">${s.price||'coordinator'}</span><span class="service-latency ${latCls}">${s.latencyMs}ms</span><span class="service-port">:${s.port}</span></div></div></div>`;
+      }).join('');
+    }
+
+    // Reports
+    async function loadReports() {
+      try {
+        const r = await fetch('/reports');
+        const d = await r.json();
+        document.getElementById('stat-reports').textContent = d.count;
+        const el = document.getElementById('recent-reports');
+        if (!d.reports.length) { el.innerHTML = '<div style="color:var(--text3);font-size:.85rem;padding:1rem;text-align:center;">No reports yet</div>'; return; }
+        el.innerHTML = d.reports.slice(0,5).map(rep => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .75rem;border-bottom:1px solid var(--border);font-size:.82rem;cursor:pointer;" onclick="location.href='/reports-page'">
+            <span style="color:var(--text);font-weight:500;">${rep.topic}</span>
+            <span style="display:flex;align-items:center;gap:.75rem;">
+              <span style="font-family:var(--mono);font-size:.7rem;color:var(--text3);">${timeAgo(rep.timestamp)}</span>
+              <span class="report-price">${rep.price}</span>
+            </span>
+          </div>
+        `).join('');
+      } catch {}
+    }
+
+    // Reputation
+    async function loadReputation() {
+      try {
+        const r = await fetch('/reputation');
+        const d = await r.json();
+        if (d.agents && d.agents.length) {
+          const avg = d.agents.reduce((s,a) => s + a.score, 0) / d.agents.length;
+          document.getElementById('stat-reputation').textContent = (avg * 100).toFixed(0) + '%';
+          const totalPnl = d.agents.reduce((s,a) => s + a.pnl, 0);
+          const el = document.getElementById('stat-pnl');
+          el.textContent = (totalPnl >= 0 ? '+' : '') + totalPnl.toFixed(1);
+          el.style.color = totalPnl >= 0 ? 'var(--green)' : 'var(--red)';
+        }
+      } catch {}
+    }
+
+    // Autopilot
+    async function loadAutopilot() {
+      try {
+        const r = await fetch('/autopilot/status');
+        const d = await r.json();
+        const phase = document.getElementById('ap-phase');
+        phase.textContent = d.phase.toUpperCase();
+        phase.className = `ap-phase ${d.phase}`;
+        document.getElementById('ap-hunt-count').textContent = `${d.huntCount} hunts`;
+        document.getElementById('ap-next').textContent = d.nextHuntAt ? new Date(d.nextHuntAt).toLocaleTimeString('en',{hour12:false}) : '\u2014';
+        document.getElementById('ap-interval').textContent = formatMs(d.currentIntervalMs);
+      } catch {}
+    }
+
+    // Ping for dynamic pricing
+    async function loadPing() {
+      try {
+        const r = await fetch('/ping');
+        const d = await r.json();
+        document.getElementById('stat-buy').textContent = d.totalBuyCost;
+        document.getElementById('stat-margin').textContent = d.margin.replace(' per hunt','');
+        document.getElementById('stat-services').textContent = d.dynamicPricing?.length + 1 || 7;
+      } catch {}
+    }
+
+    async function pollAll() {
+      const healthData = await loadStatusStrip();
+      if (healthData) updateServicesGrid(healthData);
+      await Promise.all([loadReports(), loadReputation(), loadAutopilot(), loadPing(), loadTelegram()]);
+      restartCountdown(POLL_INTERVAL);
+    }
+
+    document.getElementById('hunt-topic').addEventListener('keydown', e => { if (e.key === 'Enter') runHunt(); });
+    pollAll();
+    setInterval(pollAll, POLL_INTERVAL);
+  </script>
+</body>
+</html>
