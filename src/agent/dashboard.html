@@ -498,7 +498,7 @@
       margin-bottom: 1rem;
       display: flex;
       align-items: center;
-      gap: .5rem;
+      gap: .6rem;
       color: var(--text2);
     }
     .section-title::after {
@@ -506,6 +506,16 @@
       flex: 1;
       height: 1px;
       background: var(--border);
+    }
+    .sec-icon {
+      width: 22px; height: 22px;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sec-icon svg {
+      width: 100%; height: 100%;
     }
 
     .hunt-box {
@@ -1050,12 +1060,12 @@
   <main>
     <!-- Hero -->
     <div class="hero">
-      <div class="hero-label">⚡ SURGE × OpenClaw Hackathon 2026</div>
+      <div class="hero-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> SURGE × OpenClaw Hackathon 2026</div>
       <h1>The <span>Alpha Marketplace</span><br/>for AI Agents</h1>
       <p>5 autonomous agents buy and sell intelligence via x402 micropayments. One query. Five data sources. Real on-chain transactions.</p>
       <div class="hero-actions">
-        <button class="btn btn-primary" onclick="scrollToHunt()">🔍 Hunt Alpha</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('services-section').scrollIntoView({behavior:'smooth'})">📊 Network Status</button>
+        <button class="btn btn-primary" onclick="scrollToHunt()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Hunt Alpha</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('services-section').scrollIntoView({behavior:'smooth'})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Network Status</button>
       </div>
     </div>
 
@@ -1093,7 +1103,7 @@
 
     <!-- Hunt -->
     <div class="hunt-section" id="hunt">
-      <div class="section-title">🔍 Run a Hunt</div>
+      <div class="section-title"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></span> Run a Hunt</div>
       <div class="hunt-box">
         <div class="hunt-input-row">
           <input class="hunt-input" id="hunt-topic" type="text"
@@ -1122,7 +1132,7 @@
     </div>
 
     <!-- Autopilot -->
-    <div class="section-title">🤖 Autopilot Mode</div>
+    <div class="section-title"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93"/><path d="M8.24 9.93A4 4 0 0 1 12 2"/><rect x="3" y="14" width="18" height="7" rx="2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M10 17.5h4"/></svg></span> Autopilot Mode</div>
     <div class="autopilot-panel" id="autopilot-panel">
       <div class="ap-controls">
         <button class="btn-sm btn-green" id="ap-start-btn" onclick="toggleAutopilot()">Start Autopilot</button>
@@ -1153,13 +1163,13 @@
     </div>
 
     <!-- Circuit Breaker -->
-    <div class="section-title">🔌 Circuit Breakers</div>
+    <div class="section-title"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64A9 9 0 0 1 20.77 15"/><path d="M6.16 6.16a9 9 0 0 0-2.93 8.84"/><path d="M3.76 17.39A9 9 0 0 0 12 21a9 9 0 0 0 8.24-3.61"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4"/><path d="M2 12h4"/></svg></span> Circuit Breakers</div>
     <div class="circuit-grid" id="circuit-grid">
       <div style="color:var(--text3);font-size:.8rem;grid-column:1/-1;text-align:center;padding:.75rem;">Loading circuits...</div>
     </div>
 
     <!-- Memory -->
-    <div class="section-title">🧠 Agent Memory</div>
+    <div class="section-title"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44A2.5 2.5 0 0 1 4.5 17.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 .68-4.94A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.54-2.94 2.5 2.5 0 0 0 0-5 2.5 2.5 0 0 0-.68-4.94A2.5 2.5 0 0 0 14.5 2Z"/></svg></span> Agent Memory</div>
     <div class="memory-panel" id="memory-panel">
       <div class="memory-stats-grid" id="memory-stats">
         <div class="memory-stat"><div class="memory-stat-val" id="mem-entries">0</div><div class="memory-stat-label">Entries</div></div>
@@ -1174,14 +1184,14 @@
     </div>
 
     <!-- Reputation -->
-    <div class="section-title" id="reputation-section">🏆 Agent Reputation</div>
+    <div class="section-title" id="reputation-section"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C6 4 6 7 6 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C18 4 18 7 18 7"/><path d="M4 22h16"/><path d="M10 22V8a2 2 0 0 1 4 0v14"/><path d="M8 22v-4a2 2 0 0 1 4 0"/><path d="M12 22v-4a2 2 0 0 1 4 0v4"/></svg></span> Agent Reputation</div>
     <div class="rep-grid" id="rep-grid">
       <div style="color: var(--text3); font-size:.85rem; grid-column:1/-1; padding:1rem; text-align:center;">Loading reputations...</div>
     </div>
 
     <!-- Competition -->
     <div class="comp-card" id="comp-card">
-      <div class="comp-header">⚔️ Sentiment Agent Competition</div>
+      <div class="comp-header"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M17.5 8A2.5 2.5 0 0 1 15 5.5V3a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v2.5A2.5 2.5 0 0 1 1.5 8"/><path d="M22.5 8A2.5 2.5 0 0 0 20 5.5V3a1 1 0 0 0-1-1"/><path d="M6.5 8A2.5 2.5 0 0 0 4 10.5V12a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4v-1.5A2.5 2.5 0 0 0 17.5 8"/><path d="M12 16v4"/><path d="M8 22h8"/></svg> Sentiment Agent Competition</div>
       <div class="comp-matchup">
         <div class="comp-agent" id="comp-agent1">
           <div class="comp-agent-name">💬 Sentiment v1</div>
@@ -1199,14 +1209,14 @@
     <!-- Staking Results -->
     <div class="stake-card" id="stake-card">
       <div class="stake-header">
-        <span class="stake-title">⚖️ Latest Staking Results</span>
+        <span class="stake-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M12 3v18"/><path d="M5 6l7-3 7 3"/><path d="M3 10l2-2 2 4"/><path d="M17 10l2-2 2 4"/><circle cx="5" cy="14" r="2"/><circle cx="19" cy="14" r="2"/></svg> Latest Staking Results</span>
         <span class="consensus-badge" id="consensus-badge">—</span>
       </div>
       <div id="stake-rows"></div>
     </div>
 
     <!-- Services -->
-    <div class="section-title" id="services-section">⚙️ Network Services</div>
+    <div class="section-title" id="services-section"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/><line x1="10" y1="6" x2="20" y2="6"/><line x1="10" y1="18" x2="20" y2="18"/></svg></span> Network Services</div>
     <div class="services-grid" id="services-grid">
       <div class="service-card">
         <div class="service-status status-off"></div>
@@ -1218,7 +1228,7 @@
     </div>
 
     <!-- Reports -->
-    <div class="section-title">📦 Available Reports</div>
+    <div class="section-title"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span> Available Reports</div>
     <div id="reports-container">
       <div class="reports-grid" id="reports-grid">
         <div style="color: var(--text3); font-size:.85rem; grid-column:1/-1; padding:2rem; text-align:center;">
@@ -1228,7 +1238,7 @@
     </div>
 
     <!-- Tx Feed -->
-    <div class="section-title">⚡ Recent Transactions</div>
+    <div class="section-title"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span> Recent Transactions</div>
     <div class="tx-feed">
       <div class="tx-header">
         <span class="tx-title">x402 Payment Stream</span>
@@ -1268,7 +1278,7 @@
   </div>
 
   <footer>
-    <span>🐾 AlphaClaw Network · Base Sepolia · x402</span>
+    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> AlphaClaw Network · Base Sepolia · x402</span>
     <span>SURGE × OpenClaw Hackathon 2026</span>
   </footer>
 
