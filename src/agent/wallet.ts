@@ -92,13 +92,33 @@ export async function x402Fetch(
   const onExternalAbort = () => controller.abort();
   signal?.addEventListener("abort", onExternalAbort, { once: true });
 
+  // Internal localhost bypass: skip x402 paywall for intra-service calls
+  const isLocalhost = url.startsWith("http://localhost") || url.startsWith("http://127.0.0.1");
+
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      ...(isLocalhost ? { headers: { ...(options.headers as Record<string, string>), "X-INTERNAL": "bypass" } } : {}),
+    });
     clearTimeout(timer);
 
     if (res.status !== 402) {
       const data = await res.json().catch(() => null);
       return { ok: res.ok, status: res.status, data, paid: false };
+    }
+
+    // If localhost and still getting 402, pass through without payment (demo data)
+    if (isLocalhost) {
+      log.info("localhost x402 bypass — retrying with internal header", { url: url.split("/").pop() });
+      // Re-fetch with X-INTERNAL bypass (handled in paywall.ts before x402 middleware)
+      const bypassRes = await fetch(url, {
+        ...options,
+        headers: { ...(options.headers as Record<string, string>), "X-INTERNAL": "bypass" },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      const data = await bypassRes.json().catch(() => null);
+      return { ok: bypassRes.ok, status: bypassRes.status, data, paid: false, demoMode: true };
     }
 
     const body = await res.json() as X402Body;

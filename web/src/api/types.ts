@@ -145,6 +145,30 @@ export interface TelegramStatus {
   alertThreshold?: number;
 }
 
+// ─── Moltbook ─────────────────────────────────────────────────────────────
+
+export interface MoltbookStatus {
+  enabled: boolean;
+  submolt: string;
+  autoPost: boolean;
+  minConfidence: number;
+  postsToday: number;
+  lastPost: string | null;
+  rateLimitRemainingMs: number;
+}
+
+export interface MoltbookPostRecord {
+  postId: string;
+  reportId: string;
+  topic: string;
+  confidence: string;
+  timestamp: string;
+}
+
+export interface MoltbookHistoryResponse {
+  posts: MoltbookPostRecord[];
+}
+
 // ─── Circuits ──────────────────────────────────────────────────────────────
 
 export interface CircuitEntry {

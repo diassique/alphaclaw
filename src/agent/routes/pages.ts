@@ -6,10 +6,20 @@ import express from "express";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const webDistDir = join(__dirname, "../../../web/dist");
+const indexHtml = readFileSync(join(webDistDir, "index.html"), "utf-8");
 
-export function registerPageRoutes(app: Application): void {
-  const indexHtml = readFileSync(join(webDistDir, "index.html"), "utf-8");
+function sendSpa(_req: any, res: any): void {
+  res.setHeader("Content-Type", "text/html");
+  res.setHeader("Cache-Control", "no-cache");
+  res.send(indexHtml);
+}
 
+/**
+ * Register BEFORE API routes.
+ * Handles static assets + content negotiation for SPA paths that
+ * overlap with API GET routes (/reputation, /reports).
+ */
+export function registerPageAssets(app: Application): void {
   // Serve static assets from web/dist/
   app.use(express.static(webDistDir, { index: false, maxAge: "1h" }));
 
@@ -21,18 +31,31 @@ export function registerPageRoutes(app: Application): void {
     res.send(logoSvg);
   });
 
-  // SPA fallback: any non-API GET → index.html
+  // SPA pages that share a path with an API GET handler.
+  // Browser navigation (Accept: text/html) → serve SPA.
+  // API fetch (Accept: application/json) → fall through to API handler.
+  const conflictPaths = ["/reputation", "/reports"];
+  for (const path of conflictPaths) {
+    app.get(path, (req, res, next) => {
+      if (req.accepts(["html", "json"]) === "html") {
+        sendSpa(req, res);
+      } else {
+        next();
+      }
+    });
+  }
+}
+
+/**
+ * Register AFTER API routes.
+ * Catch-all SPA fallback for any GET that didn't match an API route.
+ */
+export function registerSpaFallback(app: Application): void {
   app.get("/{*splat}", (req, res, next) => {
-    const apiPrefixes = [
-      "/hunt", "/stream", "/health", "/ping", "/reports", "/report/",
-      "/reputation", "/autopilot", "/memory", "/telegram", "/circuits",
-      "/live", "/settlement", "/registry",
-    ];
-    if (apiPrefixes.some((p) => req.path.startsWith(p))) {
-      return next();
-    }
-    res.setHeader("Content-Type", "text/html");
-    res.setHeader("Cache-Control", "no-cache");
-    res.send(indexHtml);
+    // Skip requests with file extensions (e.g. .js, .css, .map)
+    if (/\.\w+$/.test(req.path)) return next();
+    // If the client explicitly wants JSON, let it 404 naturally
+    if (req.accepts(["html", "json"]) === "json") return next();
+    sendSpa(req, res);
   });
 }

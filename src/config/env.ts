@@ -3,6 +3,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export interface AppConfig {
+  claude: {
+    apiKey: string;
+    model: string;
+  };
   walletAddress: string;
   agentPrivateKey: string;
   facilitatorUrl: string;
@@ -25,6 +29,12 @@ export interface AppConfig {
     chatId: string;
     alertThreshold: number;
   };
+  moltbook: {
+    apiKey: string;
+    submolt: string;
+    autoPost: boolean;
+    minConfidence: number;
+  };
   autopilot: {
     baseIntervalMs: number;
     minIntervalMs: number;
@@ -46,6 +56,10 @@ function envInt(key: string, fallback: number): number {
 }
 
 export const config: AppConfig = Object.freeze({
+  claude: Object.freeze({
+    apiKey: env("ANTHROPIC_API_KEY", ""),
+    model: env("CLAUDE_MODEL", "claude-sonnet-4-6"),
+  }),
   walletAddress: env("WALLET_ADDRESS", ""),
   agentPrivateKey: env("AGENT_PRIVATE_KEY", ""),
   facilitatorUrl: env("FACILITATOR_URL", "https://x402.org/facilitator"),
@@ -67,6 +81,12 @@ export const config: AppConfig = Object.freeze({
     botToken: env("TELEGRAM_BOT_TOKEN", ""),
     chatId: env("TELEGRAM_CHAT_ID", ""),
     alertThreshold: envInt("TELEGRAM_ALERT_THRESHOLD", 50),
+  }),
+  moltbook: Object.freeze({
+    apiKey: env("MOLTBOOK_API_KEY", ""),
+    submolt: env("MOLTBOOK_SUBMOLT", "lablab"),
+    autoPost: env("MOLTBOOK_AUTO_POST", "false") === "true",
+    minConfidence: envInt("MOLTBOOK_MIN_CONFIDENCE", 40),
   }),
   cloudflareTunnelToken: env("CLOUDFLARE_TUNNEL_TOKEN", ""),
   autopilot: Object.freeze({

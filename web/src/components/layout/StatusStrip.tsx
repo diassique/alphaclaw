@@ -1,7 +1,10 @@
+import { Check, X } from "lucide-react";
 import { useStatus } from "../../context/StatusContext.tsx";
 
-function statusIcon(status: string): string {
-  return status === "ok" ? "\u2713" : "\u2717";
+function StatusIcon({ status }: { status: string }) {
+  return status === "ok"
+    ? <Check size={10} strokeWidth={3} />
+    : <X size={10} strokeWidth={3} />;
 }
 
 export function StatusStrip() {
@@ -34,7 +37,7 @@ export function StatusStrip() {
           const dotCls = s.status === "ok" ? "ok" : s.status === "error" ? "error" : "offline";
           return (
             <div key={s.name} className={`status-dot ${dotCls}`} title={s.name}>
-              <span dangerouslySetInnerHTML={{ __html: statusIcon(s.status) }} />
+              <StatusIcon status={s.status} />
               <div className="tooltip">
                 <strong>{s.name}</strong>
                 <br />

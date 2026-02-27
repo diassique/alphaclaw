@@ -43,7 +43,17 @@ export function conditionalPaywall(
     return;
   }
 
+  // Build paywall middleware
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  app.use(paymentMiddleware(walletAddress as `0x${string}`, routes as any, { url: facilitatorUrl as any }));
+  const paywallMiddleware = paymentMiddleware(walletAddress as `0x${string}`, routes as any, { url: facilitatorUrl as any });
+
+  // Wrap: bypass for internal localhost calls (coordinator → sub-agents)
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.headers["x-internal"] === "bypass") {
+      next(); // skip paywall entirely
+      return;
+    }
+    paywallMiddleware(req, res, next);
+  });
   log.info("x402 paywall active", { receiver: walletAddress, routes: Object.keys(routes) });
 }

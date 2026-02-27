@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router";
+import { Zap, Search, LayoutGrid, Bot, FileText, Server, SearchSlash } from "lucide-react";
 import { api } from "../api/client.ts";
 import { usePolling } from "../hooks/usePolling.ts";
 import { useHuntStream } from "../hooks/useHuntStream.ts";
@@ -22,9 +23,7 @@ function Hero() {
   return (
     <div className="hero">
       <div className="hero-label">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-        </svg>
+        <Zap size={14} />
         SURGE x OpenClaw Hackathon 2026
       </div>
       <h1>
@@ -38,19 +37,11 @@ function Hero() {
       </p>
       <div className="hero-actions">
         <Link className="btn btn-primary" to="/hunt">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+          <Search size={16} />
           Hunt Alpha
         </Link>
         <Link className="btn btn-secondary" to="/network">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
-          </svg>
+          <LayoutGrid size={16} />
           Network Status
         </Link>
       </div>
@@ -145,14 +136,7 @@ function AutopilotCompact({ status }: { status: AutopilotStatus | null }) {
     <>
       <div className="section-title">
         <span className="sec-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93" />
-            <path d="M8.24 9.93A4 4 0 0 1 12 2" />
-            <rect x="3" y="14" width="18" height="7" rx="2" />
-            <circle cx="7.5" cy="17.5" r="1.5" />
-            <circle cx="16.5" cy="17.5" r="1.5" />
-            <path d="M10 17.5h4" />
-          </svg>
+          <Bot size={18} stroke="var(--accent2)" />
         </span>
         Autopilot
         <Link to="/autopilot" style={{ fontSize: ".75rem", color: "var(--accent2)", textDecoration: "none", marginLeft: ".5rem" }}>
@@ -182,12 +166,7 @@ function RecentReports({ reports }: { reports: ReportSummary[] }) {
     <>
       <div className="section-title">
         <span className="sec-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-          </svg>
+          <FileText size={18} stroke="var(--accent2)" />
         </span>
         Recent Reports
         <Link to="/reports" style={{ fontSize: ".75rem", color: "var(--accent2)", textDecoration: "none", marginLeft: ".5rem" }}>
@@ -236,12 +215,7 @@ function ServicesGrid({ services }: { services: ServiceHealth[] }) {
     <>
       <div className="section-title">
         <span className="sec-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="2" width="20" height="8" rx="2" />
-            <rect x="2" y="14" width="20" height="8" rx="2" />
-            <circle cx="6" cy="6" r="1" />
-            <circle cx="6" cy="18" r="1" />
-          </svg>
+          <Server size={18} stroke="var(--accent3)" />
         </span>
         Service Health
         <Link to="/network" style={{ fontSize: ".75rem", color: "var(--accent2)", textDecoration: "none", marginLeft: ".5rem" }}>
@@ -320,12 +294,7 @@ export function DashboardPage() {
       {/* Quick Hunt */}
       <div className="section-title">
         <span className="sec-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            <line x1="11" y1="8" x2="11" y2="14" />
-            <line x1="8" y1="11" x2="14" y2="11" />
-          </svg>
+          <SearchSlash size={18} stroke="var(--accent2)" />
         </span>
         Quick Hunt
       </div>

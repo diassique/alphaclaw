@@ -290,6 +290,12 @@ export interface AlphaSynthesis {
   reputationSnapshot: ReputationSnapshot;
   dynamicPricing: DynamicPrice[];
   competitionResult?: CompetitionResult;
+  narrative?: {
+    summary: string;
+    moltbookTitle: string;
+    moltbookBody: string;
+    keyInsight: string;
+  };
   breakdown: {
     sentiment: Pick<SentimentResult, "label" | "score" | "confidence"> | null;
     polymarket: { market: string; signal: string; yesPrice: number } | null;
@@ -412,4 +418,22 @@ export interface TelegramConfig {
   chatId: string;
   alertThreshold: number;   // minimum confidence % to send alert
   enabled: boolean;
+}
+
+// ─── Moltbook ──────────────────────────────────────────────────────────────
+
+export interface MoltbookConfig {
+  apiKey: string;
+  submolt: string;
+  autoPost: boolean;
+  minConfidence: number;    // minimum confidence % to auto-post
+  enabled: boolean;
+}
+
+export interface MoltbookPostRecord {
+  postId: string;
+  reportId: string;
+  topic: string;
+  confidence: string;
+  timestamp: string;
 }

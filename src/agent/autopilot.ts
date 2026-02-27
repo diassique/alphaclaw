@@ -11,6 +11,8 @@ import { getCircuitSnapshot } from "./circuit-breaker.js";
 import { getEffectivePrice } from "../config/services.js";
 import { walletClient } from "./wallet.js";
 import { notifyHuntResult } from "./telegram.js";
+import { notifyMoltbookHuntResult } from "./moltbook.js";
+import { generateAlphaNarrative, isClaudeEnabled } from "./claude.js";
 import type {
   AutopilotPhase,
   AutopilotStatus,
@@ -142,6 +144,26 @@ async function runHunt(): Promise<void> {
       breakdown: builtinBreakdown,
     };
 
+    // Enrich with Claude narrative if enabled
+    if (isClaudeEnabled()) {
+      try {
+        const narrative = await generateAlphaNarrative({
+          topic,
+          sentiment: alpha.breakdown.sentiment,
+          polymarket: alpha.breakdown.polymarket
+            ? { ...alpha.breakdown.polymarket, yesPrice: String(alpha.breakdown.polymarket.yesPrice) }
+            : null,
+          defi: alpha.breakdown.defi,
+          news: alpha.breakdown.news,
+          whale: alpha.breakdown.whale,
+          confidence: alpha.confidence,
+          recommendation: alpha.recommendation,
+          consensusStrength: alpha.consensusStrength,
+        });
+        if (narrative) alpha.narrative = narrative;
+      } catch (_) { /* non-critical */ }
+    }
+
     const report: CachedReport = {
       id: reportId,
       topic,
@@ -150,7 +172,7 @@ async function runHunt(): Promise<void> {
       alpha,
       agentPayments: paymentLog,
       stakingSummary: alpha.stakingSummary,
-      preview: `[autopilot] ${alpha.recommendation} | ${alpha.confidence}`,
+      preview: alpha.narrative?.keyInsight ?? `[autopilot] ${alpha.recommendation} | ${alpha.confidence}`,
     };
     cacheReport(report);
 
@@ -173,8 +195,9 @@ async function runHunt(): Promise<void> {
       circuits: getCircuitSnapshot(),
     });
 
-    // Notify Telegram
+    // Notify Telegram + Moltbook
     notifyHuntResult(topic, alpha, "autopilot").catch(() => {});
+    notifyMoltbookHuntResult(report).catch(() => {});
 
     // Adapt interval
     adaptInterval(alpha.weightedConfidence);

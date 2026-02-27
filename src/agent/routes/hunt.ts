@@ -9,6 +9,8 @@ import { generateReportId, cacheReport } from "../report-cache.js";
 import { getEffectivePrice } from "../../config/services.js";
 import { recordHunt } from "../memory.js";
 import { notifyHuntResult } from "../telegram.js";
+import { notifyMoltbookHuntResult } from "../moltbook.js";
+import { generateAlphaNarrative, isClaudeEnabled } from "../claude.js";
 import type { SentimentResult, PolymarketResult, DefiResult, NewsResult, WhaleResult, PaymentLog, CachedReport } from "../../types/index.js";
 
 const log = createLogger("coordinator");
@@ -60,6 +62,28 @@ export function registerHuntRoutes(app: Application): void {
       breakdown: builtinBreakdown,
     };
 
+    // Generate Claude narrative (async, enriches alpha if enabled)
+    if (isClaudeEnabled()) {
+      try {
+        const narrative = await generateAlphaNarrative({
+          topic,
+          sentiment: alpha.breakdown.sentiment,
+          polymarket: alpha.breakdown.polymarket
+            ? { ...alpha.breakdown.polymarket, yesPrice: String(alpha.breakdown.polymarket.yesPrice) }
+            : null,
+          defi: alpha.breakdown.defi,
+          news: alpha.breakdown.news,
+          whale: alpha.breakdown.whale,
+          confidence: alpha.confidence,
+          recommendation: alpha.recommendation,
+          consensusStrength: alpha.consensusStrength,
+        });
+        if (narrative) alpha.narrative = narrative;
+      } catch (err) {
+        log.warn("claude narrative skipped", { error: (err as Error).message });
+      }
+    }
+
     const reportId = generateReportId(topic, ts);
     const report: CachedReport = {
       id: reportId,
@@ -82,8 +106,9 @@ export function registerHuntRoutes(app: Application): void {
       recommendation: alpha.recommendation,
     });
 
-    // Notify Telegram (async, don't block response)
+    // Notify Telegram + Moltbook (async, don't block response)
     notifyHuntResult(topic, alpha, "manual").catch(() => {});
+    notifyMoltbookHuntResult(report).catch(() => {});
 
     res.json({
       service: "alphaclaw-coordinator",

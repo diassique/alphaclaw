@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { NavLink, Link } from "react-router";
+import { Sun, Moon } from "lucide-react";
 import { useStatus } from "../../context/StatusContext.tsx";
-import { useTelegram } from "../../context/TelegramContext.tsx";
+import { useTheme } from "../../context/ThemeContext.tsx";
 import clawSvg from "../../assets/claw.svg";
 
 const links = [
@@ -13,13 +14,14 @@ const links = [
   { to: "/network", label: "Network" },
   { to: "/reports", label: "Reports" },
   { to: "/telegram", label: "Telegram" },
+  { to: "/moltbook", label: "Moltbook" },
   { to: "/live", label: "Live" },
 ];
 
 export function Nav() {
   const [open, setOpen] = useState(false);
   const health = useStatus();
-  const tg = useTelegram();
+  const { theme, toggleTheme } = useTheme();
 
   const toggle = () => setOpen((o) => !o);
   const close = () => setOpen(false);
@@ -73,16 +75,17 @@ export function Nav() {
           ))}
         </div>
         <div className="nav-right">
-          <span
-            className={tg?.enabled ? "tg-badge tg-on" : "tg-badge tg-off"}
-            title={tg?.enabled ? `Telegram Bot \u00b7 Threshold: ${tg.alertThreshold}%` : "Telegram Bot (not configured)"}
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
-            {tg?.enabled ? "TG ON" : "TG OFF"}
-          </span>
+            {theme === "dark" ? <Sun /> : <Moon />}
+          </button>
           <span className={badgeClass}>
             <span className="dot"></span> {badgeText}
           </span>
-          <span className="badge badge-purple">Base Sepolia &middot; x402</span>
         </div>
       </nav>
       <div className={`nav-overlay${open ? " open" : ""}`} onClick={close} />

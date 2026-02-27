@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "tunnel": "cloudflared tunnel --url http://localhost:5000 --no-autoupdate",
     "web:dev": "cd web && npx vite",
-    "web:build": "cd web && npx vite build"
+    "web:build": "cd web && npx vite build",
+    "openclaw": "bash openclaw-start.sh"
   },
   "keywords": [
     "x402",
@@ -31,6 +32,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "compression": "^1.8.1",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",

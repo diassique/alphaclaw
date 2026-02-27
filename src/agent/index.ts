@@ -16,7 +16,7 @@ import { registerMemoryRoutes } from "./routes/memory.js";
 import { registerTelegramRoutes } from "./routes/telegram.js";
 import { registerSettlementRoutes } from "./routes/settlement.js";
 import { registerLiveRoutes } from "./routes/live.js";
-import { registerPageRoutes } from "./routes/pages.js";
+import { registerPageAssets, registerSpaFallback } from "./routes/pages.js";
 import { getReputation, loadReputation, setRegistryKeyProvider } from "./reputation.js";
 import { setReputationProvider, setRegistryProvider } from "../config/services.js";
 import { loadRegistry, startHealthChecks, stopHealthChecks, getAgent, getAllAgentKeys } from "./registry.js";
@@ -28,6 +28,8 @@ import { loadAutopilot, stopAutopilot } from "./autopilot.js";
 import { loadSettlements, startSettlementLoop, stopSettlementLoop } from "./settlement.js";
 import { flushAllStores, destroyAllStores } from "../lib/store.js";
 import { initTelegram } from "./telegram.js";
+import { loadMoltbook, initMoltbook } from "./moltbook.js";
+import { registerMoltbookRoutes } from "./routes/moltbook.js";
 
 const log = createLogger("coordinator");
 const port = config.ports.agent;
@@ -54,9 +56,9 @@ conditionalPaywall(app, config.walletAddress, {
   },
 }, config.facilitatorUrl);
 
-// ─── Pages (dashboard, hunt, autopilot, etc.) ───────────────────────────────
+// ─── Static assets + SPA content negotiation (before API routes) ────────────
 
-registerPageRoutes(app);
+registerPageAssets(app);
 
 // ─── Load persistent state (order matters: reputation before setReputationProvider) ─
 
@@ -73,6 +75,7 @@ loadCircuits();
 loadReports();
 loadAutopilot();
 loadSettlements();
+loadMoltbook();
 startSettlementLoop();
 setReputationProvider((key) => getReputation(key).score);
 
@@ -89,12 +92,17 @@ registerTelegramRoutes(app);
 registerSettlementRoutes(app);
 registerLiveRoutes(app);
 registerRegistryRoutes(app);
+registerMoltbookRoutes(app);
 
 // ─── Health ──────────────────────────────────────────────────────────────────
 
 app.get("/health", (_req, res) => {
   res.json({ service: "alphaclaw-coordinator", timestamp: new Date().toISOString(), status: "ok", port, walletConnected: !!walletClient });
 });
+
+// ─── SPA fallback (must be LAST so API routes match first) ──────────────────
+
+registerSpaFallback(app);
 
 // ─── Start ───────────────────────────────────────────────────────────────────
 
@@ -119,6 +127,7 @@ const server = app.listen(port, "0.0.0.0", () => {
     sellPrice: "$0.050",
   });
   initTelegram();
+  initMoltbook();
 });
 
 server.on("error", (err: NodeJS.ErrnoException) => {

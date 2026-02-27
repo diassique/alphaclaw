@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { Wallet, Activity, Clock, Fish, Shield, Copy, ExternalLink } from "lucide-react";
 import { api } from "../api/client.ts";
 import { usePolling } from "../hooks/usePolling.ts";
 import { PageHeader } from "../components/shared/PageHeader.tsx";
@@ -11,56 +12,6 @@ import type {
   HuntPayingEvent,
   HuntResultEvent,
 } from "../api/types.ts";
-
-// ─── Inline SVG icons ────────────────────────────────────────────────────────
-
-const WalletIcon = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="2" y="5" width="20" height="14" rx="2" />
-    <path d="M16 12h.01" />
-  </svg>
-);
-
-const FlowIcon = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-  </svg>
-);
-
-const TxIcon = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="12" cy="12" r="10" />
-    <polyline points="12 6 12 12 16 14" />
-  </svg>
-);
-
-const WhaleIcon = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 18v-6a9 9 0 0118 0v6" />
-    <path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" />
-  </svg>
-);
-
-const ShieldIcon = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-  </svg>
-);
-
-const CopySvg = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="9" y="9" width="13" height="13" rx="2" />
-    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-  </svg>
-);
-
-const ExternalLinkSvg = (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-    <polyline points="15 3 21 3 21 9" />
-    <line x1="10" y1="14" x2="21" y2="3" />
-  </svg>
-);
 
 // ─── Service definitions for flow diagram ────────────────────────────────────
 
@@ -285,7 +236,7 @@ export function LivePage() {
 
       {/* ── Wallet Identity Panel ──────────────────────────────────────── */}
       <div className="section-title">
-        <span className="sec-icon">{WalletIcon}</span>
+        <span className="sec-icon"><Wallet size={18} /></span>
         Wallet Identity
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "2rem" }}>
@@ -305,7 +256,7 @@ export function LivePage() {
                 title="Copy address"
                 onClick={() => copyAddr(config.sender!, setFlashCopy, "sender")}
               >
-                {CopySvg}
+                <Copy size={14} />
               </button>
             )}
           </div>
@@ -317,7 +268,7 @@ export function LivePage() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {ExternalLinkSvg} View on BaseScan
+                <ExternalLink size={12} /> View on BaseScan
               </a>
             )}
             <span className="wallet-network-badge">{config?.network ?? "base-sepolia"}</span>
@@ -353,7 +304,7 @@ export function LivePage() {
                 title="Copy address"
                 onClick={() => copyAddr(config.receiver!, setFlashCopy, "receiver")}
               >
-                {CopySvg}
+                <Copy size={14} />
               </button>
             )}
           </div>
@@ -365,7 +316,7 @@ export function LivePage() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {ExternalLinkSvg} View on BaseScan
+                <ExternalLink size={12} /> View on BaseScan
               </a>
             )}
             <span className="wallet-network-badge">USDC receiver</span>
@@ -386,7 +337,7 @@ export function LivePage() {
             rel="noopener noreferrer"
             style={{ fontSize: ".78rem" }}
           >
-            {ExternalLinkSvg} {config.usdcContract}
+            <ExternalLink size={12} /> {config.usdcContract}
           </a>
         ) : (
           <span style={{ fontSize: ".78rem", color: "var(--text3)" }}>Loading...</span>
@@ -395,7 +346,7 @@ export function LivePage() {
 
       {/* ── Payment Flow Diagram ───────────────────────────────────────── */}
       <div className="section-title">
-        <span className="sec-icon">{FlowIcon}</span>
+        <span className="sec-icon"><Activity size={18} /></span>
         Payment Flow
       </div>
       <div className="panel" style={{ marginBottom: "2rem" }}>
@@ -432,9 +383,7 @@ export function LivePage() {
             })}
           </div>
           <div className="flow-receiver-label">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
+            <Shield size={12} />
             {" "}Receiver: {config?.receiver ? shortAddr(config.receiver) : "not set"}
           </div>
         </div>
@@ -442,7 +391,7 @@ export function LivePage() {
 
       {/* ── Live Hunt Trigger + x402 Transaction Feed ──────────────────── */}
       <div className="section-title">
-        <span className="sec-icon">{TxIcon}</span>
+        <span className="sec-icon"><Clock size={18} /></span>
         x402 Transaction Feed
         {streaming && (
           <span className="live-badge">
@@ -499,7 +448,7 @@ export function LivePage() {
 
       {/* ── Whale Movements ────────────────────────────────────────────── */}
       <div className="section-title" style={{ marginTop: "2rem" }}>
-        <span className="sec-icon">{WhaleIcon}</span>
+        <span className="sec-icon"><Fish size={18} /></span>
         Whale Movements
         <span className="badge badge-yellow" style={{ marginLeft: ".5rem" }}>Base Mainnet</span>
       </div>
@@ -552,7 +501,7 @@ export function LivePage() {
 
       {/* ── Settlement Oracle ──────────────────────────────────────────── */}
       <div className="section-title" style={{ marginTop: "2rem" }}>
-        <span className="sec-icon">{ShieldIcon}</span>
+        <span className="sec-icon"><Shield size={18} /></span>
         Settlement Oracle
       </div>
       <div className="panel" style={{ marginBottom: "2rem" }}>

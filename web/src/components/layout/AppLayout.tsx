@@ -5,7 +5,7 @@ import { Footer } from "./Footer.tsx";
 
 export function AppLayout() {
   return (
-    <>
+    <div className="app-shell">
       <div className="orb orb1" />
       <div className="orb orb2" />
       <Nav />
@@ -14,6 +14,6 @@ export function AppLayout() {
       </main>
       <StatusStrip />
       <Footer />
-    </>
+    </div>
   );
 }
