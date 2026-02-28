@@ -39,6 +39,19 @@ interface PendingItem {
   settled: boolean;
 }
 
+interface SettlementHistoryItem {
+  huntId: string;
+  topic: string;
+  consensus: string;
+  correct: boolean;
+  priceMovePct: number;
+  settledAt: string;
+}
+
+interface SettlementHistoryResponse {
+  history: SettlementHistoryItem[];
+}
+
 // ─── Whale response shape ────────────────────────────────────────────────────
 
 interface WhaleResponse {
@@ -129,6 +142,9 @@ export function LivePage() {
 
   const pendingFetcher = useCallback(() => api<PendingItem[]>("/settlement/pending"), []);
   const { data: pendingItems } = usePolling(pendingFetcher, 30_000);
+
+  const historyFetcher = useCallback(() => api<SettlementHistoryResponse>("/settlement/history?limit=20"), []);
+  const { data: historyData } = usePolling(historyFetcher, 30_000);
 
   // ── Derived values ───────────────────────────────────────────────────────
 
@@ -532,6 +548,44 @@ export function LivePage() {
           </div>
         </div>
       </div>
+
+      {/* Settlement History */}
+      {historyData?.history && historyData.history.length > 0 && (
+        <div className="panel" style={{ marginBottom: "2rem", maxHeight: 300, overflow: "auto" }}>
+          <div style={{ fontSize: ".7rem", fontWeight: 600, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: ".5rem" }}>
+            Settlement History
+          </div>
+          {historyData.history.map((h, i) => (
+            <div
+              key={h.huntId}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: ".75rem",
+                padding: ".35rem 0",
+                borderBottom: i < historyData.history.length - 1 ? "1px solid var(--border)" : "none",
+                fontSize: ".75rem",
+                fontFamily: "var(--mono)",
+              }}
+            >
+              <span style={{ fontSize: ".85rem" }}>{h.correct ? "\u2705" : "\u274c"}</span>
+              <span style={{ color: "var(--text)", fontWeight: 600, minWidth: 100 }}>{h.topic}</span>
+              <span style={{
+                color: h.consensus === "bullish" ? "var(--green)" : h.consensus === "bearish" ? "var(--red)" : "var(--text3)",
+                minWidth: 60,
+              }}>
+                {h.consensus}
+              </span>
+              <span style={{ color: "var(--text3)" }}>
+                {h.priceMovePct >= 0 ? "+" : ""}{h.priceMovePct.toFixed(2)}%
+              </span>
+              <span style={{ color: "var(--text3)", fontSize: ".65rem", marginLeft: "auto" }}>
+                {new Date(h.settledAt).toLocaleTimeString("en", { hour12: false })}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

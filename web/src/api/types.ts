@@ -96,6 +96,7 @@ export interface ReportDetail {
     recommendation: string;
     signals: string[];
     breakdown: BreakdownSection;
+    narrative?: AlphaNarrative;
   };
   agentPayments?: { breakdown: PaymentEntry[] };
   stakingSummary?: StakingSummary;
@@ -306,12 +307,21 @@ export interface HuntResultEvent {
   toAddr?: string;
 }
 
+export interface AlphaNarrative {
+  summary: string;
+  keyInsight: string;
+  moltbookTitle: string;
+  moltbookBody: string;
+}
+
 export interface HuntAlphaEvent {
   recommendation: string;
   confidence: string;
   weightedConfidence?: number;
   signals: string[];
   breakdown?: BreakdownSection;
+  narrative?: AlphaNarrative;
+  consensusStrength?: number;
 }
 
 export interface HuntStakingEvent {

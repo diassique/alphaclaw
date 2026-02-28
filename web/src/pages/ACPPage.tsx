@@ -1,4 +1,4 @@
-import { useState, useCallback, type CSSProperties } from "react";
+import { useState, useEffect, useCallback, type CSSProperties } from "react";
 import { api } from "../api/client.ts";
 import { usePolling } from "../hooks/usePolling.ts";
 import { PageHeader } from "../components/shared/PageHeader.tsx";
@@ -395,9 +395,33 @@ function WeightBreakdown({ breakdown }: { breakdown: Record<string, number> }) {
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 
+interface ACPSpecRule {
+  rule: string;
+  trigger: string;
+  slash?: string;
+  reward?: string;
+  repImpact: number;
+  extraSlash?: string;
+  extraReward?: string;
+  extraRepImpact?: number;
+}
+
+interface ACPSpec {
+  protocol: string;
+  version: number;
+  staking: { maxStake: number; effectiveStakeFormula: string; weightFormula: string };
+  slashingRules: ACPSpecRule[];
+  phases: { name: string; description: string }[];
+}
+
 export function ACPPage() {
   const statusFetcher = useCallback(() => api<ACPProtocolStatus>("/acp/status"), []);
   const { data: status, loading } = usePolling(statusFetcher, POLL_MS);
+
+  const [spec, setSpec] = useState<ACPSpec | null>(null);
+  useEffect(() => {
+    api<ACPSpec>("/acp/spec").then(setSpec).catch(() => {});
+  }, []);
 
   if (loading && !status) {
     return (
@@ -484,6 +508,80 @@ export function ACPPage() {
         <div className="section-title">Slash & Reward Log</div>
         <EventLog slashes={status.recentSlashes} rewards={status.recentRewards} />
       </div>
+
+      {/* Protocol Specification */}
+      {spec && (
+        <div style={{ marginBottom: "2rem" }}>
+          <div className="section-title">Protocol Specification</div>
+          <div className="panel">
+            <div style={{ display: "flex", alignItems: "center", gap: ".75rem", marginBottom: "1rem" }}>
+              <span style={{ fontWeight: 700, fontSize: ".9rem", color: "var(--text)" }}>{spec.protocol}</span>
+              <span style={{ fontSize: ".7rem", background: "var(--accent2)", color: "#000", borderRadius: 4, padding: "1px 6px", fontWeight: 600 }}>
+                v{spec.version}
+              </span>
+            </div>
+
+            {/* Phases */}
+            <div style={{ fontSize: ".7rem", fontWeight: 600, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: ".4rem" }}>
+              Phases
+            </div>
+            <div style={{ display: "flex", gap: ".5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+              {spec.phases.map((p, i) => (
+                <div key={p.name} style={{ display: "flex", alignItems: "center", gap: ".3rem" }}>
+                  {i > 0 && <span style={{ color: "var(--text3)", fontSize: ".7rem" }}>-&gt;</span>}
+                  <div style={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, padding: ".3rem .6rem" }}>
+                    <div style={{ fontWeight: 700, fontSize: ".75rem", color: "var(--accent2)" }}>{p.name}</div>
+                    <div style={{ fontSize: ".65rem", color: "var(--text3)" }}>{p.description}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Staking formulas */}
+            <div style={{ fontSize: ".7rem", fontWeight: 600, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: ".4rem" }}>
+              Staking
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: ".5rem", marginBottom: "1rem", fontFamily: "var(--mono)", fontSize: ".75rem" }}>
+              <div style={{ background: "var(--bg3)", borderRadius: 6, padding: ".4rem .6rem" }}>
+                <span style={{ color: "var(--text3)" }}>Max Stake: </span>
+                <span style={{ color: "var(--text)" }}>{spec.staking.maxStake}</span>
+              </div>
+              <div style={{ background: "var(--bg3)", borderRadius: 6, padding: ".4rem .6rem" }}>
+                <span style={{ color: "var(--text3)" }}>Weight: </span>
+                <span style={{ color: "var(--text)" }}>{spec.staking.weightFormula}</span>
+              </div>
+            </div>
+
+            {/* Slashing rules */}
+            <div style={{ fontSize: ".7rem", fontWeight: 600, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: ".4rem" }}>
+              Slashing & Reward Rules
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: ".4rem" }}>
+              {spec.slashingRules.map((r) => (
+                <div key={r.rule} style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: ".75rem",
+                  background: "var(--bg3)",
+                  borderRadius: 6,
+                  padding: ".4rem .6rem",
+                  fontSize: ".7rem",
+                  fontFamily: "var(--mono)",
+                  borderLeft: `3px solid ${r.slash ? "var(--red)" : "var(--green)"}`,
+                }}>
+                  <span style={{ fontWeight: 700, color: "var(--text)", minWidth: 140 }}>{r.rule}</span>
+                  <span style={{ color: "var(--text3)", flex: 1 }}>{r.trigger}</span>
+                  {r.slash && <span style={{ color: "var(--red)" }}>{r.slash}</span>}
+                  {r.reward && <span style={{ color: "var(--green)" }}>{r.reward}</span>}
+                  <span style={{ color: r.repImpact >= 0 ? "var(--green)" : "var(--red)", minWidth: 40, textAlign: "right" }}>
+                    rep: {r.repImpact >= 0 ? "+" : ""}{r.repImpact}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

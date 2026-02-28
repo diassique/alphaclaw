@@ -322,6 +322,21 @@ function ReportModalBody({
         </div>
       </div>
 
+      {/* Claude Narrative */}
+      {alpha.narrative && (
+        <div className="report-detail-section">
+          <div className="report-detail-label">AI Analysis (Claude)</div>
+          <div style={{ fontSize: ".85rem", color: "var(--text)", lineHeight: 1.6 }}>
+            {alpha.narrative.summary}
+          </div>
+          {alpha.narrative.keyInsight && (
+            <div style={{ marginTop: ".4rem", fontSize: ".8rem", color: "var(--text2)", fontStyle: "italic" }}>
+              Key insight: {alpha.narrative.keyInsight}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* News */}
       {breakdown.news && (
         <div className="report-detail-section">

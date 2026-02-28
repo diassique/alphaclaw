@@ -12,6 +12,7 @@ import { scheduleSettlement } from "../settlement.js";
 import { extractDirection } from "../reputation.js";
 import { getEffectivePrice } from "../../config/services.js";
 import { executeACPRound } from "../acp.js";
+import { generateAlphaNarrative, isClaudeEnabled } from "../claude.js";
 import { walletClient } from "../wallet.js";
 import { recordTx } from "../tx-log.js";
 import type { ServiceResponse, SentimentResult, PolymarketResult, DefiResult, NewsResult, WhaleResult, CachedReport, ServiceKey } from "../../types/index.js";
@@ -207,6 +208,26 @@ export function registerStreamRoutes(app: Application): void {
         competitionResult,
         externalResults,
       });
+
+      // Generate Claude narrative if enabled
+      if (isClaudeEnabled()) {
+        try {
+          const narrative = await generateAlphaNarrative({
+            topic,
+            sentiment: alpha.breakdown.sentiment,
+            polymarket: alpha.breakdown.polymarket
+              ? { ...alpha.breakdown.polymarket, yesPrice: String(alpha.breakdown.polymarket.yesPrice) }
+              : null,
+            defi: alpha.breakdown.defi,
+            news: alpha.breakdown.news,
+            whale: alpha.breakdown.whale,
+            confidence: alpha.confidence,
+            recommendation: alpha.recommendation,
+            consensusStrength: alpha.consensusStrength,
+          });
+          if (narrative) alpha.narrative = narrative;
+        } catch { /* skip narrative on error */ }
+      }
 
       send("alpha", alpha);
       send("staking", alpha.stakingSummary);

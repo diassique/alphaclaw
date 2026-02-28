@@ -15,7 +15,20 @@ import type {
   ReputationResponse,
   AutopilotStatus,
   ServiceHealth,
+  ACPProtocolStatus,
 } from "../api/types.ts";
+
+interface SettlementStats {
+  totalSettled: number;
+  accuracy: number;
+  avgPriceMovePct: number;
+}
+
+interface MemoryStats {
+  totalEntries: number;
+  verified: number;
+  topPatterns: { pattern: string; accuracy: number }[];
+}
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -245,6 +258,73 @@ function ServicesGrid({ services }: { services: ServiceHealth[] }) {
   );
 }
 
+function SystemPulse({ acp, settlement, memory }: { acp: ACPProtocolStatus | null; settlement: SettlementStats | null; memory: MemoryStats | null }) {
+  return (
+    <>
+      <div className="section-title">
+        <span className="sec-icon">
+          <Zap size={18} stroke="var(--accent2)" />
+        </span>
+        System Pulse
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: ".75rem", marginBottom: "2rem" }}>
+        {/* ACP */}
+        <Link to="/acp" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="panel" style={{ padding: ".75rem 1rem" }}>
+            <div style={{ fontSize: ".65rem", fontWeight: 600, color: "var(--accent2)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: ".3rem" }}>
+              ACP Consensus
+            </div>
+            {acp ? (
+              <div style={{ display: "flex", gap: "1rem", fontSize: ".8rem", fontFamily: "var(--mono)" }}>
+                <span><strong>{acp.totalRounds}</strong> rounds</span>
+                <span style={{ color: "var(--red)" }}>{acp.totalSlashes} slashes</span>
+                <span style={{ color: "var(--green)" }}>{acp.totalRewards} rewards</span>
+              </div>
+            ) : (
+              <span style={{ color: "var(--text3)", fontSize: ".8rem" }}>No data</span>
+            )}
+          </div>
+        </Link>
+
+        {/* Settlement */}
+        <Link to="/live" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="panel" style={{ padding: ".75rem 1rem" }}>
+            <div style={{ fontSize: ".65rem", fontWeight: 600, color: "var(--accent2)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: ".3rem" }}>
+              Settlement Oracle
+            </div>
+            {settlement ? (
+              <div style={{ display: "flex", gap: "1rem", fontSize: ".8rem", fontFamily: "var(--mono)" }}>
+                <span><strong>{settlement.totalSettled}</strong> settled</span>
+                <span style={{ color: settlement.accuracy >= 50 ? "var(--green)" : "var(--red)" }}>{settlement.accuracy.toFixed(0)}% accuracy</span>
+              </div>
+            ) : (
+              <span style={{ color: "var(--text3)", fontSize: ".8rem" }}>No settlements</span>
+            )}
+          </div>
+        </Link>
+
+        {/* Memory */}
+        <Link to="/memory" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="panel" style={{ padding: ".75rem 1rem" }}>
+            <div style={{ fontSize: ".65rem", fontWeight: 600, color: "var(--accent2)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: ".3rem" }}>
+              Agent Memory
+            </div>
+            {memory ? (
+              <div style={{ display: "flex", gap: "1rem", fontSize: ".8rem", fontFamily: "var(--mono)" }}>
+                <span><strong>{memory.totalEntries}</strong> entries</span>
+                <span style={{ color: "var(--green)" }}>{memory.verified} verified</span>
+                <span>{memory.topPatterns.length} patterns</span>
+              </div>
+            ) : (
+              <span style={{ color: "var(--text3)", fontSize: ".8rem" }}>No entries</span>
+            )}
+          </div>
+        </Link>
+      </div>
+    </>
+  );
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
@@ -254,11 +334,17 @@ export function DashboardPage() {
   const reputationFetcher = useCallback(() => api<ReputationResponse>("/reputation"), []);
   const autopilotFetcher = useCallback(() => api<AutopilotStatus>("/autopilot/status"), []);
   const pingFetcher = useCallback(() => api<PingResponse>("/ping"), []);
+  const acpFetcher = useCallback(() => api<ACPProtocolStatus>("/acp/status"), []);
+  const settlementFetcher = useCallback(() => api<SettlementStats>("/settlement/stats"), []);
+  const memoryFetcher = useCallback(() => api<MemoryStats>("/memory/stats"), []);
 
   const { data: reports } = usePolling(reportsFetcher, 10_000);
   const { data: reputation } = usePolling(reputationFetcher, 10_000);
   const { data: autopilot } = usePolling(autopilotFetcher, 10_000);
   const { data: ping } = usePolling(pingFetcher, 10_000);
+  const { data: acp } = usePolling(acpFetcher, 15_000);
+  const { data: settlement } = usePolling(settlementFetcher, 15_000);
+  const { data: memory } = usePolling(memoryFetcher, 15_000);
 
   const { hunting, logs, alpha, startHunt } = useHuntStream();
   const [showStream, setShowStream] = useState(false);
@@ -325,6 +411,8 @@ export function DashboardPage() {
       )}
 
       <AutopilotCompact status={autopilot} />
+
+      <SystemPulse acp={acp} settlement={settlement} memory={memory} />
 
       <RecentReports reports={reports?.reports ?? []} />
 

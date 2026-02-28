@@ -72,6 +72,30 @@ function AlphaResult({ alpha }: { alpha: HuntAlphaEvent }) {
           <span key={s} className="signal-tag">{s}</span>
         ))}
       </div>
+      {alpha.narrative && (
+        <div
+          style={{
+            marginTop: "1rem",
+            padding: "1rem 1.2rem",
+            background: "var(--bg3)",
+            border: "1px solid var(--border)",
+            borderLeft: "3px solid var(--accent2)",
+            borderRadius: 8,
+          }}
+        >
+          <div style={{ fontSize: ".7rem", fontWeight: 600, color: "var(--accent2)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: ".4rem" }}>
+            AI Analysis (Claude)
+          </div>
+          <div style={{ fontSize: ".85rem", color: "var(--text)", lineHeight: 1.6 }}>
+            {alpha.narrative.summary}
+          </div>
+          {alpha.narrative.keyInsight && (
+            <div style={{ marginTop: ".5rem", fontSize: ".8rem", color: "var(--text2)", fontStyle: "italic" }}>
+              Key insight: {alpha.narrative.keyInsight}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
