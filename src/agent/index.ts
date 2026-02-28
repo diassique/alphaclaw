@@ -44,20 +44,9 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
 app.use(express.json({ limit: "10kb" }));
 
-// ─── Paywall ─────────────────────────────────────────────────────────────────
+// ─── CORS (coordinator is free — real x402 payments happen coordinator→sub-services) ─
 
-conditionalPaywall(app, config.walletAddress, {
-  "POST /hunt": {
-    price: "$0.05",
-    network: config.network,
-    description: "AlphaClaw full alpha hunt — 5-source synthesis: news + sentiment + polymarket + DeFi + whale",
-  },
-  "GET /report": {
-    price: "$0.01",
-    network: config.network,
-    description: "AlphaClaw cached alpha report — synthesized intelligence from 5 data sources",
-  },
-}, config.facilitatorUrl);
+conditionalPaywall(app, undefined, {}, config.facilitatorUrl);
 
 // ─── Static assets + SPA content negotiation (before API routes) ────────────
 
