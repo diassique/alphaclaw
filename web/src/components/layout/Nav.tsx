@@ -10,6 +10,7 @@ const links = [
   { to: "/hunt", label: "Hunt" },
   { to: "/autopilot", label: "Autopilot" },
   { to: "/reputation", label: "Reputation" },
+  { to: "/acp", label: "ACP" },
   { to: "/memory", label: "Memory" },
   { to: "/network", label: "Network" },
   { to: "/reports", label: "Reports" },

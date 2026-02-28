@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { randomBytes } from "crypto";
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ export interface AppConfig {
     topics: string[];
   };
   cloudflareTunnelToken: string;
+  internalSecret: string;
 }
 
 function env(key: string, fallback: string): string {
@@ -89,6 +91,7 @@ export const config: AppConfig = Object.freeze({
     minConfidence: envInt("MOLTBOOK_MIN_CONFIDENCE", 40),
   }),
   cloudflareTunnelToken: env("CLOUDFLARE_TUNNEL_TOKEN", ""),
+  internalSecret: env("INTERNAL_SECRET", randomBytes(32).toString("hex")),
   autopilot: Object.freeze({
     baseIntervalMs: envInt("AUTOPILOT_INTERVAL_MS", 5 * 60_000),
     minIntervalMs: envInt("AUTOPILOT_MIN_INTERVAL_MS", 5 * 60_000),

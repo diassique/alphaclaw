@@ -12,7 +12,7 @@ const { app, log, start } = createService({
   port: config.ports.sentiment,
   routes: {
     "POST /analyze": {
-      price: "$0.01",
+      price: "$0.001",
       description: "Crypto market sentiment analysis — bullish/bearish signals from text",
     },
   },

@@ -24,7 +24,7 @@ if (config.agentPrivateKey) {
     walletClient = createWalletClient({
       account,
       chain: baseSepolia,
-      transport: http("https://sepolia.base.org"),
+      transport: http(config.baseRpcUrl),
     });
     log.info("wallet loaded", { address: account.address });
   } catch (err) {
@@ -99,7 +99,7 @@ export async function x402Fetch(
     const res = await fetch(url, {
       ...options,
       signal: controller.signal,
-      ...(isLocalhost ? { headers: { ...(options.headers as Record<string, string>), "X-INTERNAL": "bypass" } } : {}),
+      ...(isLocalhost ? { headers: { ...(options.headers as Record<string, string>), "X-INTERNAL": config.internalSecret } } : {}),
     });
     clearTimeout(timer);
 
@@ -115,7 +115,7 @@ export async function x402Fetch(
       // Re-fetch with X-INTERNAL bypass (handled in paywall.ts before x402 middleware)
       const bypassRes = await fetch(url, {
         ...options,
-        headers: { ...(options.headers as Record<string, string>), "X-INTERNAL": "bypass" },
+        headers: { ...(options.headers as Record<string, string>), "X-INTERNAL": config.internalSecret },
         signal: AbortSignal.timeout(timeoutMs),
       });
       const data = await bypassRes.json().catch(() => null);

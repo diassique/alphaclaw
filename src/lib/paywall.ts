@@ -47,10 +47,10 @@ export function conditionalPaywall(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const paywallMiddleware = paymentMiddleware(walletAddress as `0x${string}`, routes as any, { url: facilitatorUrl as any });
 
-  // Wrap: bypass for internal localhost calls (coordinator → sub-agents)
+  // Wrap: bypass for internal coordinator → sub-agent calls (authenticated by shared secret)
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.headers["x-internal"] === "bypass") {
-      next(); // skip paywall entirely
+    if (req.headers["x-internal"] === config.internalSecret) {
+      next(); // skip paywall — verified internal call
       return;
     }
     paywallMiddleware(req, res, next);

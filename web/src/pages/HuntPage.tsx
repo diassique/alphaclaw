@@ -14,6 +14,9 @@ import type {
   HuntCompetitionEvent,
   BreakdownSection,
   StakeResult,
+  ACPConsensusResult,
+  ACPSettlementResult,
+  ACPAgentVote,
 } from "../api/types.ts";
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -206,6 +209,103 @@ function StakingCard({ staking }: { staking: HuntStakingEvent }) {
   );
 }
 
+function ACPCard({ consensus, settlement, votes }: { consensus: ACPConsensusResult; settlement?: ACPSettlementResult | null; votes?: ACPAgentVote[] | null }) {
+  const dirColor = consensus.direction === "bullish" ? "var(--green)" : consensus.direction === "bearish" ? "var(--red)" : "var(--text3)";
+  return (
+    <div className="panel" style={{ marginBottom: "2rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: ".75rem" }}>
+        <div style={{ fontWeight: 700, fontSize: ".85rem", color: "var(--text)" }}>
+          ACP Consensus
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
+          <span style={{ color: dirColor, fontWeight: 700, fontSize: ".85rem", textTransform: "uppercase" }}>
+            {consensus.direction}
+          </span>
+          {consensus.unanimity && (
+            <span style={{ fontSize: ".65rem", background: "var(--green)", color: "#000", borderRadius: 4, padding: "1px 5px", fontWeight: 600 }}>
+              UNANIMOUS
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Strength bar */}
+      <div style={{ marginBottom: ".75rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".65rem", color: "var(--text3)", marginBottom: 2 }}>
+          <span>Consensus Strength</span>
+          <span>{(consensus.strength * 100).toFixed(0)}%</span>
+        </div>
+        <div style={{ background: "var(--bg3)", borderRadius: 4, height: 6, overflow: "hidden" }}>
+          <div style={{
+            width: `${consensus.strength * 100}%`,
+            height: "100%",
+            background: consensus.strength > 0.7 ? "var(--green)" : consensus.strength > 0.4 ? "var(--yellow, #eab308)" : "var(--red)",
+            borderRadius: 4,
+          }} />
+        </div>
+      </div>
+
+      {/* Weight breakdown */}
+      <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", marginBottom: votes ? ".75rem" : 0 }}>
+        {Object.entries(consensus.weightBreakdown).sort((a, b) => b[1] - a[1]).map(([dir, weight]) => {
+          const total = Object.values(consensus.weightBreakdown).reduce((s, v) => s + v, 0) || 1;
+          return (
+            <div key={dir} style={{
+              flex: `${weight / total}`,
+              minWidth: 50,
+              background: dir === "bullish" ? "var(--green)" : dir === "bearish" ? "var(--red)" : "var(--text3)",
+              borderRadius: 6,
+              padding: ".25rem .4rem",
+              textAlign: "center",
+              fontSize: ".65rem",
+              fontWeight: 700,
+              color: "#000",
+            }}>
+              {dir} {((weight / total) * 100).toFixed(0)}%
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Votes grid */}
+      {votes && votes.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: ".4rem", marginBottom: settlement ? ".75rem" : 0 }}>
+          {votes.map((v) => (
+            <div key={v.key} style={{
+              background: "var(--bg3)",
+              border: `1px solid ${v.agreedWithConsensus ? "var(--green)" : "var(--red)"}`,
+              borderRadius: 6,
+              padding: ".3rem .5rem",
+              fontSize: ".65rem",
+              fontFamily: "var(--mono)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontWeight: 700, color: "var(--text)" }}>{SERVICE_LABELS[v.key] ?? v.key}</span>
+                <span style={{ color: v.direction === "bullish" ? "var(--green)" : v.direction === "bearish" ? "var(--red)" : "var(--text3)", fontWeight: 600 }}>{v.direction}</span>
+              </div>
+              <div style={{ color: "var(--text3)" }}>w: {v.weight.toFixed(1)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Settlement */}
+      {settlement && (
+        <div style={{ display: "flex", gap: "1rem", fontSize: ".7rem", fontFamily: "var(--mono)", color: "var(--text3)" }}>
+          <span>Staked: {settlement.totalStaked.toFixed(0)}</span>
+          <span>Returned: {settlement.totalReturned.toFixed(0)}</span>
+          <span style={{ color: settlement.netPnl >= 0 ? "var(--green)" : "var(--red)", fontWeight: 700 }}>
+            Net: {settlement.netPnl >= 0 ? "+" : ""}{settlement.netPnl.toFixed(1)}
+          </span>
+          {settlement.slashedAgents.length > 0 && (
+            <span style={{ color: "var(--red)" }}>Slashed: {settlement.slashedAgents.join(", ")}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CompetitionCard({ competition }: { competition: HuntCompetitionEvent }) {
   const v1IsWinner = competition.winner === "sentiment";
   return (
@@ -263,7 +363,7 @@ function PaymentLog({ txLog }: { txLog: TxEntry[] }) {
 
 export function HuntPage() {
   // SSE hunt stream
-  const { hunting, logs, alpha, breakdown, staking, competition, txLog, startHunt } =
+  const { hunting, logs, alpha, breakdown, staking, competition, acpConsensus, acpSettlement, acpVotes, txLog, startHunt } =
     useHuntStream();
 
   // Dynamic pricing (loaded once on mount)
@@ -359,6 +459,9 @@ export function HuntPage() {
 
       {/* Staking Results */}
       {staking && <StakingCard staking={staking} />}
+
+      {/* ACP Consensus */}
+      {acpConsensus && <ACPCard consensus={acpConsensus} settlement={acpSettlement} votes={acpVotes} />}
 
       {/* Competition */}
       {competition && <CompetitionCard competition={competition} />}

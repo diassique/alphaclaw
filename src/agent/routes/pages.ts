@@ -1,14 +1,19 @@
 import type { Application } from "express";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import express from "express";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const webDistDir = join(__dirname, "../../../web/dist");
-const indexHtml = readFileSync(join(webDistDir, "index.html"), "utf-8");
+const indexHtmlPath = join(webDistDir, "index.html");
+const indexHtml = existsSync(indexHtmlPath) ? readFileSync(indexHtmlPath, "utf-8") : null;
 
 function sendSpa(_req: any, res: any): void {
+  if (!indexHtml) {
+    res.status(503).json({ error: "Frontend not built. Run: npm run web:build" });
+    return;
+  }
   res.setHeader("Content-Type", "text/html");
   res.setHeader("Cache-Control", "no-cache");
   res.send(indexHtml);
@@ -20,8 +25,10 @@ function sendSpa(_req: any, res: any): void {
  * overlap with API GET routes (/reputation, /reports).
  */
 export function registerPageAssets(app: Application): void {
-  // Serve static assets from web/dist/
-  app.use(express.static(webDistDir, { index: false, maxAge: "1h" }));
+  // Serve static assets from web/dist/ (skip if not built)
+  if (existsSync(webDistDir)) {
+    app.use(express.static(webDistDir, { index: false, maxAge: "1h" }));
+  }
 
   // Logo fallback
   app.get("/logo.svg", (_req, res) => {

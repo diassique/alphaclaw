@@ -14,6 +14,7 @@ import { ReportsPage } from "./pages/ReportsPage.tsx";
 import { TelegramPage } from "./pages/TelegramPage.tsx";
 import { LivePage } from "./pages/LivePage.tsx";
 import { MoltbookPage } from "./pages/MoltbookPage.tsx";
+import { ACPPage } from "./pages/ACPPage.tsx";
 
 export function App() {
   return (
@@ -28,6 +29,7 @@ export function App() {
                 <Route path="hunt" element={<HuntPage />} />
                 <Route path="autopilot" element={<AutopilotPage />} />
                 <Route path="reputation" element={<ReputationPage />} />
+                <Route path="acp" element={<ACPPage />} />
                 <Route path="memory" element={<MemoryPage />} />
                 <Route path="network" element={<NetworkPage />} />
                 <Route path="reports" element={<ReportsPage />} />

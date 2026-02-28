@@ -18,6 +18,7 @@ const log = createLogger("coordinator");
 
 export function registerHuntRoutes(app: Application): void {
   app.post("/hunt", async (req, res) => {
+    try {
     const topic = validateString(req, res, "topic", { maxLen: 200, defaultVal: "crypto market" });
     if (topic === null) return;
 
@@ -141,5 +142,11 @@ export function registerHuntRoutes(app: Application): void {
         margin: `$${(0.05 - dp.reduce((s, p) => s + parseFloat(p.effectivePrice.replace("$", "")), 0)).toFixed(4)} per hunt`,
       },
     });
+    } catch (err) {
+      log.error("hunt failed", { error: (err as Error).message });
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Hunt failed", message: (err as Error).message });
+      }
+    }
   });
 }

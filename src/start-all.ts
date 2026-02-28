@@ -2,8 +2,14 @@ import { spawn, execFileSync, type ChildProcess } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { createServer } from "net";
+import { randomBytes } from "crypto";
 import { SERVICE_DEFS } from "./config/services.js";
 import { config } from "./config/env.js";
+
+// Generate a shared internal secret for all child processes (paywall bypass auth)
+if (!process.env["INTERNAL_SECRET"]) {
+  process.env["INTERNAL_SECRET"] = randomBytes(32).toString("hex");
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, "..");

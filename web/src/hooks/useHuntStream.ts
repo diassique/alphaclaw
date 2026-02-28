@@ -7,6 +7,9 @@ import type {
   HuntStakingEvent,
   HuntCompetitionEvent,
   BreakdownSection,
+  ACPConsensusResult,
+  ACPSettlementResult,
+  ACPAgentVote,
 } from "../api/types.ts";
 
 export interface LogEntry {
@@ -23,6 +26,9 @@ export interface HuntStreamState {
   breakdown: BreakdownSection | null;
   staking: HuntStakingEvent | null;
   competition: HuntCompetitionEvent | null;
+  acpConsensus: ACPConsensusResult | null;
+  acpSettlement: ACPSettlementResult | null;
+  acpVotes: ACPAgentVote[] | null;
   txLog: { service: string; txHash?: string; amount: string }[];
 }
 
@@ -38,6 +44,9 @@ export function useHuntStream() {
     breakdown: null,
     staking: null,
     competition: null,
+    acpConsensus: null,
+    acpSettlement: null,
+    acpVotes: null,
     txLog: [],
   });
   const esRef = useRef<EventSource | null>(null);
@@ -60,6 +69,9 @@ export function useHuntStream() {
         breakdown: null,
         staking: null,
         competition: null,
+        acpConsensus: null,
+        acpSettlement: null,
+        acpVotes: null,
         txLog: [],
       });
 
@@ -122,6 +134,44 @@ export function useHuntStream() {
         const d = JSON.parse(e.data) as HuntCompetitionEvent;
         log("alpha", "\u2694\ufe0f", `Competition: ${d.winner} wins (${d.winnerRatio} vs ${d.loserRatio})`);
         setState((s) => ({ ...s, competition: d }));
+      });
+
+      es.addEventListener("acp:consensus", (e) => {
+        const d = JSON.parse(e.data) as ACPConsensusResult;
+        const strength = (d.strength * 100).toFixed(0);
+        log("alpha", "\ud83e\udd1d", `ACP Consensus: ${d.direction.toUpperCase()} \u00b7 ${strength}% strength${d.unanimity ? " (unanimous)" : ""} \u00b7 ${d.quorum} agents`);
+        setState((s) => ({ ...s, acpConsensus: d }));
+      });
+
+      es.addEventListener("acp:settle", (e) => {
+        const d = JSON.parse(e.data) as ACPSettlementResult;
+        const pnl = d.netPnl >= 0 ? `+${d.netPnl.toFixed(1)}` : d.netPnl.toFixed(1);
+        log("alpha", "\u2696\ufe0f", `ACP Settlement: ${d.totalStaked.toFixed(0)} staked \u2192 ${d.totalReturned.toFixed(0)} returned (${pnl})${d.slashedAgents.length > 0 ? ` \u00b7 slashed: ${d.slashedAgents.join(", ")}` : ""}`);
+        setState((s) => ({ ...s, acpSettlement: d }));
+      });
+
+      es.addEventListener("acp:votes", (e) => {
+        const d = JSON.parse(e.data) as ACPAgentVote[];
+        log("ok", "\ud83d\uddf3\ufe0f", `ACP Votes: ${d.length} agents voted`);
+        setState((s) => ({ ...s, acpVotes: d }));
+      });
+
+      es.addEventListener("reputation", (e) => {
+        try {
+          const d = JSON.parse(e.data) as Record<string, { score: number }>;
+          const entries = Object.entries(d);
+          if (entries.length > 0) {
+            const avg = entries.reduce((s, [, v]) => s + v.score, 0) / entries.length;
+            log("ok", "\u2b50", `Reputation updated \u00b7 avg: ${(avg * 100).toFixed(0)}%`);
+          }
+        } catch { /* ignore */ }
+      });
+
+      es.addEventListener("settlement", (e) => {
+        try {
+          const d = JSON.parse(e.data) as { id: string; status: string };
+          log("ok", "\ud83c\udfe6", `Settlement: ${d.id?.slice(0, 8) ?? "?"}\u2026 ${d.status}`);
+        } catch { /* ignore */ }
       });
 
       es.addEventListener("cached", (e) => {
