@@ -11,6 +11,7 @@ import { recordHunt } from "../memory.js";
 import { scheduleSettlement } from "../settlement.js";
 import { extractDirection } from "../reputation.js";
 import { getEffectivePrice } from "../../config/services.js";
+import { executeACPRound } from "../acp.js";
 import { walletClient } from "../wallet.js";
 import { recordTx } from "../tx-log.js";
 import type { ServiceResponse, SentimentResult, PolymarketResult, DefiResult, NewsResult, WhaleResult, CachedReport, ServiceKey } from "../../types/index.js";
@@ -210,6 +211,23 @@ export function registerStreamRoutes(app: Application): void {
       send("alpha", alpha);
       send("staking", alpha.stakingSummary);
       send("reputation", alpha.reputationSnapshot);
+
+      // ACP round
+      const acpRound = executeACPRound({
+        roundId: huntId,
+        topic,
+        responses: [
+          { key: "news", response: newsRes },
+          { key: "sentiment", response: sentimentRes },
+          { key: "polymarket", response: polymarketRes },
+          { key: "defi", response: defiRes },
+          { key: "whale", response: whaleRes },
+          ...Object.entries(externalResults).map(([key, resp]) => ({ key, response: resp })),
+        ],
+      });
+      send("acp:consensus", acpRound.consensus);
+      send("acp:settle", acpRound.settlement);
+      send("acp:votes", acpRound.agents);
 
       const ts = new Date().toISOString();
       const reportId = generateReportId(topic, ts);

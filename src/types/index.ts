@@ -240,6 +240,7 @@ export interface X402FetchResult {
   txHash?: string;
   demoMode?: boolean;
   paymentRequired?: { description?: string; amount: string };
+  acpHeaders?: Record<string, string>;
 }
 
 export interface ServiceResponse {
@@ -249,6 +250,7 @@ export interface ServiceResponse {
   txHash?: string;
   demoMode?: boolean;
   paymentRequired?: { description?: string; amount: string };
+  acpHeaders?: Record<string, string>;
 }
 
 export interface PolymarketResult {
@@ -418,6 +420,103 @@ export interface TelegramConfig {
   chatId: string;
   alertThreshold: number;   // minimum confidence % to send alert
   enabled: boolean;
+}
+
+// ─── Alpha Consensus Protocol (ACP) ────────────────────────────────────────
+
+export const ACP_VERSION = 1;
+
+export const ACP_HEADERS = {
+  confidence: "x-acp-confidence",
+  stake: "x-acp-stake",
+  direction: "x-acp-direction",
+  version: "x-acp-version",
+} as const;
+
+export type ACPPhase = "collect" | "consensus" | "settle";
+
+export interface ACPAgentVote {
+  key: ServiceKey;
+  direction: Direction;
+  confidence: number;
+  declaredStake: number;
+  effectiveStake: number;
+  reputation: number;
+  weight: number;              // effectiveStake * reputation
+  agreedWithConsensus: boolean;
+  fromHeaders: boolean;        // true if parsed from X-ACP-* headers
+  responseTimeMs?: number;
+}
+
+export interface ACPConsensusResult {
+  direction: Direction;
+  strength: number;            // 0–1, ratio of agreeing weight
+  unanimity: boolean;          // all agents agree
+  quorum: number;              // number of agents that voted
+  totalWeight: number;
+  weightBreakdown: Record<Direction, number>;
+}
+
+export interface ACPSlashEvent {
+  roundId: string;
+  agent: ServiceKey;
+  reason: string;
+  slashedAmount: number;
+  reputationDelta: number;
+  timestamp: string;
+}
+
+export interface ACPRewardEvent {
+  roundId: string;
+  agent: ServiceKey;
+  reason: string;
+  rewardAmount: number;
+  reputationDelta: number;
+  timestamp: string;
+}
+
+export interface ACPSettlementResult {
+  totalStaked: number;
+  totalReturned: number;
+  netPnl: number;
+  slashedAgents: string[];
+  rewardedAgents: string[];
+  slashEvents: ACPSlashEvent[];
+  rewardEvents: ACPRewardEvent[];
+}
+
+export interface ACPRound {
+  roundId: string;
+  topic: string;
+  timestamp: string;
+  phases: { phase: ACPPhase; durationMs: number }[];
+  agents: ACPAgentVote[];
+  consensus: ACPConsensusResult;
+  settlement: ACPSettlementResult;
+}
+
+export interface ACPAgentStats {
+  key: ServiceKey;
+  rounds: number;
+  totalStaked: number;
+  totalReturned: number;
+  pnl: number;
+  agreementRate: number;       // % of rounds agreed with consensus
+  currentStreak: number;       // positive = agree streak, negative = disagree
+  bestStreak: number;
+  slashCount: number;
+  rewardCount: number;
+}
+
+export interface ACPProtocolStatus {
+  version: number;
+  totalRounds: number;
+  totalSlashes: number;
+  totalRewards: number;
+  recentRounds: ACPRound[];
+  leaderboard: ACPAgentStats[];
+  recentSlashes: ACPSlashEvent[];
+  recentRewards: ACPRewardEvent[];
 }
 
 // ─── Moltbook ──────────────────────────────────────────────────────────────

@@ -12,6 +12,7 @@ import type {
   RegistryResponse,
   AgentInfo,
   ServiceHealth,
+  MarketplaceStatus,
 } from "../api/types.ts";
 
 // ─── Registration form state type ───────────────────────────────────────────
@@ -435,6 +436,118 @@ function ArchitectureDiagram() {
   );
 }
 
+// ─── Marketplace Controls ───────────────────────────────────────────────────
+
+function MarketplaceControls({ onChanged }: { onChanged: () => void }) {
+  const statusFetcher = useCallback(
+    () => api<MarketplaceStatus>("/marketplace/status"),
+    [],
+  );
+  const { data: status, refresh } = usePolling(statusFetcher, 5_000);
+  const [busy, setBusy] = useState(false);
+
+  const launch = async () => {
+    setBusy(true);
+    try {
+      await api<MarketplaceStatus>("/marketplace/start", { method: "POST" });
+      refresh();
+      onChanged();
+    } catch {
+      // ignore
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const stop = async () => {
+    setBusy(true);
+    try {
+      await api<{ ok: boolean }>("/marketplace/stop", { method: "POST" });
+      refresh();
+      onChanged();
+    } catch {
+      // ignore
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const isRunning = status?.running ?? false;
+
+  return (
+    <div
+      className="panel"
+      style={{
+        marginBottom: "1.5rem",
+        border: isRunning ? "1px solid var(--green)" : "1px solid var(--border)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: isRunning ? ".75rem" : 0,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
+          <div
+            className={`status-indicator ${isRunning ? "ok" : "off"}`}
+            style={{ width: 10, height: 10 }}
+          />
+          <span style={{ fontWeight: 700, fontSize: ".85rem", color: "var(--text)" }}>
+            Marketplace Simulator
+          </span>
+          <span style={{ fontSize: ".7rem", color: "var(--text3)" }}>
+            {isRunning ? `${status?.agents.length ?? 0} mock agents running` : "stopped"}
+          </span>
+        </div>
+        <button
+          disabled={busy}
+          onClick={isRunning ? stop : launch}
+          style={{
+            background: isRunning ? "transparent" : "var(--green)",
+            border: isRunning ? "1px solid var(--red)" : "none",
+            color: isRunning ? "var(--red)" : "#000",
+            borderRadius: 6,
+            padding: ".35rem .8rem",
+            fontSize: ".75rem",
+            fontWeight: 600,
+            cursor: busy ? "wait" : "pointer",
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
+          {busy ? "..." : isRunning ? "Stop Marketplace" : "Launch Marketplace"}
+        </button>
+      </div>
+      {isRunning && status?.agents && status.agents.length > 0 && (
+        <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
+          {status.agents.map((a) => (
+            <div
+              key={a.key}
+              style={{
+                background: "var(--bg3)",
+                border: "1px solid var(--border)",
+                borderRadius: 6,
+                padding: ".3rem .6rem",
+                fontSize: ".7rem",
+                fontFamily: "var(--mono)",
+              }}
+            >
+              <span style={{ color: "var(--accent2)", fontWeight: 600 }}>
+                {a.displayName}
+              </span>
+              <span style={{ color: "var(--text3)", marginLeft: ".3rem" }}>
+                :{a.port}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Registration form ──────────────────────────────────────────────────────
 
 const formInputStyle: CSSProperties = {
@@ -802,6 +915,9 @@ export function NetworkPage() {
           <div className="stat-label">Cached Reports</div>
         </div>
       </div>
+
+      {/* ── Marketplace Simulator ─────────────────────────────────────────── */}
+      <MarketplaceControls onChanged={refreshRegistry} />
 
       {/* ── Registered Agents ─────────────────────────────────────────────── */}
       <div className="section-title">Registered Agents</div>

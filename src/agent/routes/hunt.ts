@@ -11,6 +11,7 @@ import { recordHunt } from "../memory.js";
 import { notifyHuntResult } from "../telegram.js";
 import { notifyMoltbookHuntResult } from "../moltbook.js";
 import { generateAlphaNarrative, isClaudeEnabled } from "../claude.js";
+import { executeACPRound } from "../acp.js";
 import type { SentimentResult, PolymarketResult, DefiResult, NewsResult, WhaleResult, PaymentLog, CachedReport } from "../../types/index.js";
 
 const log = createLogger("coordinator");
@@ -36,6 +37,20 @@ export function registerHuntRoutes(app: Application): void {
       warnings,
       competitionResult,
       externalResults: external,
+    });
+
+    // Execute ACP round
+    const acpRound = executeACPRound({
+      roundId: huntId,
+      topic,
+      responses: [
+        { key: "news", response: news },
+        { key: "sentiment", response: sentiment },
+        { key: "polymarket", response: polymarket },
+        { key: "defi", response: defi },
+        { key: "whale", response: whale },
+        ...Object.entries(external).map(([key, resp]) => ({ key, response: resp })),
+      ],
     });
 
     const dp = alpha.dynamicPricing;
@@ -116,6 +131,7 @@ export function registerHuntRoutes(app: Application): void {
       topic,
       huntId,
       alpha,
+      acpRound,
       agentPayments: paymentLog,
       cachedReport: { id: reportId, availableAt: `/report/${reportId}`, price: "$0.01" },
       dynamicPricing: alpha.dynamicPricing,

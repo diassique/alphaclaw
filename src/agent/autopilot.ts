@@ -215,16 +215,27 @@ function adaptInterval(confidence: number): void {
   const oldInterval = currentIntervalMs;
   const { minIntervalMs, maxIntervalMs, baseIntervalMs } = config.autopilot;
 
+  let reason: string;
   if (confidence >= 70) {
     // High confidence → slow down (save money, signals are strong)
     currentIntervalMs = Math.min(maxIntervalMs, Math.round(currentIntervalMs * 1.3));
-  } else if (confidence <= 30) {
-    // Low confidence → speed up (need more data)
-    currentIntervalMs = Math.max(minIntervalMs, Math.round(currentIntervalMs * 0.7));
+    reason = "high confidence → slowing";
+  } else if (confidence <= 15) {
+    // Very low confidence → slight speed-up (conservative: 10% faster, not 30%)
+    currentIntervalMs = Math.max(minIntervalMs, Math.round(currentIntervalMs * 0.9));
+    reason = "very low confidence → slight speed-up";
+  } else if (confidence <= 40) {
+    // Moderate-low → drift toward base (no aggressive speed-up)
+    currentIntervalMs = Math.max(minIntervalMs, Math.round(currentIntervalMs * 0.95 + baseIntervalMs * 0.05));
+    reason = "low confidence → drifting to base";
   } else {
-    // Drift toward base
+    // 40–70 range → drift toward base
     currentIntervalMs = Math.round(currentIntervalMs * 0.9 + baseIntervalMs * 0.1);
+    reason = "moderate confidence → drifting to base";
   }
+
+  // Clamp to bounds
+  currentIntervalMs = Math.max(minIntervalMs, Math.min(maxIntervalMs, currentIntervalMs));
 
   if (oldInterval !== currentIntervalMs) {
     const record: AdaptationRecord = {
@@ -232,7 +243,7 @@ function adaptInterval(confidence: number): void {
       oldIntervalMs: oldInterval,
       newIntervalMs: currentIntervalMs,
       confidence,
-      reason: confidence >= 70 ? "high confidence → slowing" : confidence <= 30 ? "low confidence → speeding up" : "drifting to base",
+      reason,
     };
     adaptations.push(record);
     if (adaptations.length > 50) adaptations.shift();

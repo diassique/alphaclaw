@@ -4,6 +4,8 @@ import { config } from "../../config/env.js";
 import { BULL_WORDS, BEAR_WORDS, STRONG_BULL, STRONG_BEAR, BULL_PHRASES, BEAR_PHRASES, NEGATIONS } from "./lexicon.js";
 import type { SentimentLabel, ConfidenceLevel, SentimentSignal } from "../../types/index.js";
 
+const MAX_STAKE = 100;
+
 const { app, log, start } = createService({
   name: "sentiment",
   displayName: "crypto-sentiment",
@@ -106,6 +108,14 @@ app.post("/analyze", (req, res) => {
   const confidenceBasis = `${confidence} conf + ${Math.abs(normalized).toFixed(2)} magnitude + ${signals.length} signals`;
 
   log.info("analyze", { label, score: normalized, wordCount: words.length, signalCount: signals.length, confidenceScore: confidenceScore.toFixed(3) });
+
+  // ACP protocol headers
+  const acpDirection = (label === "strongly_bullish" || label === "bullish") ? "bullish"
+    : (label === "strongly_bearish" || label === "bearish") ? "bearish" : "neutral";
+  res.setHeader("X-ACP-Direction", acpDirection);
+  res.setHeader("X-ACP-Confidence", confidenceScore.toFixed(3));
+  res.setHeader("X-ACP-Stake", (MAX_STAKE * confidenceScore).toFixed(2));
+  res.setHeader("X-ACP-Version", "1");
 
   res.json({
     service: "crypto-sentiment",

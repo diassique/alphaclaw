@@ -271,6 +271,20 @@ export interface RegistryResponse {
   external: number;
 }
 
+// ─── Marketplace ──────────────────────────────────────────────────────────
+
+export interface MarketplaceAgent {
+  key: string;
+  displayName: string;
+  port: number;
+  url: string;
+}
+
+export interface MarketplaceStatus {
+  running: boolean;
+  agents: MarketplaceAgent[];
+}
+
 // ─── SSE Events ────────────────────────────────────────────────────────────
 
 export interface HuntStartEvent {
@@ -313,4 +327,90 @@ export interface HuntCompetitionEvent {
   winnerRatio: number;
   loserRatio: number;
   reason: string;
+}
+
+// ─── ACP (Alpha Consensus Protocol) ─────────────────────────────────────
+
+export interface ACPAgentVote {
+  key: string;
+  direction: string;
+  confidence: number;
+  declaredStake: number;
+  effectiveStake: number;
+  reputation: number;
+  weight: number;
+  agreedWithConsensus: boolean;
+  fromHeaders: boolean;
+  responseTimeMs?: number;
+}
+
+export interface ACPConsensusResult {
+  direction: string;
+  strength: number;
+  unanimity: boolean;
+  quorum: number;
+  totalWeight: number;
+  weightBreakdown: Record<string, number>;
+}
+
+export interface ACPSlashEvent {
+  roundId: string;
+  agent: string;
+  reason: string;
+  slashedAmount: number;
+  reputationDelta: number;
+  timestamp: string;
+}
+
+export interface ACPRewardEvent {
+  roundId: string;
+  agent: string;
+  reason: string;
+  rewardAmount: number;
+  reputationDelta: number;
+  timestamp: string;
+}
+
+export interface ACPSettlementResult {
+  totalStaked: number;
+  totalReturned: number;
+  netPnl: number;
+  slashedAgents: string[];
+  rewardedAgents: string[];
+  slashEvents: ACPSlashEvent[];
+  rewardEvents: ACPRewardEvent[];
+}
+
+export interface ACPRound {
+  roundId: string;
+  topic: string;
+  timestamp: string;
+  phases: { phase: string; durationMs: number }[];
+  agents: ACPAgentVote[];
+  consensus: ACPConsensusResult;
+  settlement: ACPSettlementResult;
+}
+
+export interface ACPAgentStats {
+  key: string;
+  rounds: number;
+  totalStaked: number;
+  totalReturned: number;
+  pnl: number;
+  agreementRate: number;
+  currentStreak: number;
+  bestStreak: number;
+  slashCount: number;
+  rewardCount: number;
+}
+
+export interface ACPProtocolStatus {
+  version: number;
+  totalRounds: number;
+  totalSlashes: number;
+  totalRewards: number;
+  recentRounds: ACPRound[];
+  leaderboard: ACPAgentStats[];
+  recentSlashes: ACPSlashEvent[];
+  recentRewards: ACPRewardEvent[];
 }

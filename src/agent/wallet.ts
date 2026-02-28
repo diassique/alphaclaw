@@ -105,7 +105,8 @@ export async function x402Fetch(
 
     if (res.status !== 402) {
       const data = await res.json().catch(() => null);
-      return { ok: res.ok, status: res.status, data, paid: false };
+      const acpHeaders = extractACPHeaders(res);
+      return { ok: res.ok, status: res.status, data, paid: false, ...(acpHeaders ? { acpHeaders } : {}) };
     }
 
     // If localhost and still getting 402, pass through without payment (demo data)
@@ -165,4 +166,18 @@ export async function x402Fetch(
   } finally {
     signal?.removeEventListener("abort", onExternalAbort);
   }
+}
+
+// ─── ACP header extraction ───────────────────────────────────────────────────
+
+const ACP_HEADER_KEYS = ["x-acp-confidence", "x-acp-stake", "x-acp-direction", "x-acp-version"];
+
+function extractACPHeaders(res: Response): Record<string, string> | null {
+  const headers: Record<string, string> = {};
+  let found = false;
+  for (const key of ACP_HEADER_KEYS) {
+    const val = res.headers.get(key);
+    if (val) { headers[key] = val; found = true; }
+  }
+  return found ? headers : null;
 }

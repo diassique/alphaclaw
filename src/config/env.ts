@@ -91,7 +91,7 @@ export const config: AppConfig = Object.freeze({
   cloudflareTunnelToken: env("CLOUDFLARE_TUNNEL_TOKEN", ""),
   autopilot: Object.freeze({
     baseIntervalMs: envInt("AUTOPILOT_INTERVAL_MS", 5 * 60_000),
-    minIntervalMs: envInt("AUTOPILOT_MIN_INTERVAL_MS", 60_000),
+    minIntervalMs: envInt("AUTOPILOT_MIN_INTERVAL_MS", 5 * 60_000),
     maxIntervalMs: envInt("AUTOPILOT_MAX_INTERVAL_MS", 15 * 60_000),
     topics: Object.freeze(
       env("AUTOPILOT_TOPICS", "bitcoin,ethereum,solana,DeFi alpha,crypto market").split(",").map(t => t.trim()),

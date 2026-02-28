@@ -30,6 +30,9 @@ import { flushAllStores, destroyAllStores } from "../lib/store.js";
 import { initTelegram } from "./telegram.js";
 import { loadMoltbook, initMoltbook } from "./moltbook.js";
 import { registerMoltbookRoutes } from "./routes/moltbook.js";
+import { loadACP } from "./acp.js";
+import { registerACPRoutes } from "./routes/acp.js";
+import { registerMarketplaceRoutes } from "./routes/marketplace.js";
 
 const log = createLogger("coordinator");
 const port = config.ports.agent;
@@ -76,6 +79,7 @@ loadReports();
 loadAutopilot();
 loadSettlements();
 loadMoltbook();
+loadACP();
 startSettlementLoop();
 setReputationProvider((key) => getReputation(key).score);
 
@@ -93,6 +97,8 @@ registerSettlementRoutes(app);
 registerLiveRoutes(app);
 registerRegistryRoutes(app);
 registerMoltbookRoutes(app);
+registerACPRoutes(app);
+registerMarketplaceRoutes(app);
 
 // ─── Health ──────────────────────────────────────────────────────────────────
 
