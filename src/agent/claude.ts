@@ -1,48 +1,14 @@
 /**
- * AlphaClaw Claude integration
- * Routes requests through the local claude-bridge (port 5010)
- * which uses the claude CLI under the hood — no separate API key needed.
+ * AlphaClaw narrative generation — powered by Groq LLM.
+ * Uses shared lib/llm.ts for all API calls.
  */
 
+import { callLLMJson, isLLMEnabled } from "../lib/llm.js";
 import { createLogger } from "../lib/logger.js";
 
-const log = createLogger("claude");
+const log = createLogger("narrative");
 
-const BRIDGE_URL = "http://localhost:5010/v1/messages";
-const MODEL = "claude-sonnet-4-6";
-const BRIDGE_TIMEOUT_MS = 60_000;
-
-export function isClaudeEnabled(): boolean {
-  return true; // Always enabled via bridge
-}
-
-// ─── Core fetch ─────────────────────────────────────────────────────────────
-
-async function callClaude(prompt: string, maxTokens = 1024): Promise<string | null> {
-  try {
-    const res = await fetch(BRIDGE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: maxTokens,
-        messages: [{ role: "user", content: prompt }],
-      }),
-      signal: AbortSignal.timeout(BRIDGE_TIMEOUT_MS),
-    });
-
-    if (!res.ok) {
-      log.warn("claude bridge error", { status: res.status });
-      return null;
-    }
-
-    const data = await res.json() as { content?: Array<{ type: string; text: string }> };
-    return data.content?.[0]?.text ?? null;
-  } catch (err) {
-    log.warn("claude bridge unreachable", { error: (err as Error).message });
-    return null;
-  }
-}
+export { isLLMEnabled as isClaudeEnabled };
 
 // ─── Alpha Narrative ────────────────────────────────────────────────────────
 
@@ -73,7 +39,8 @@ export async function generateAlphaNarrative(input: AlphaInput): Promise<ClaudeN
   if (input.news) signals.push(`News: "${input.news.topHeadline}" (${input.news.articleCount} articles)`);
   if (input.whale) signals.push(`Whale activity: ${input.whale.signal}, ${input.whale.whaleCount} whales, volume: ${input.whale.totalVolume}`);
 
-  const prompt = `You are AlphaClaw — an autonomous DeFi and prediction market alpha agent. You completed a multi-source intelligence hunt on: "${input.topic}".
+  const result = await callLLMJson<ClaudeNarrative>(
+    `You are AlphaClaw — an autonomous DeFi and prediction market alpha agent. You completed a multi-source intelligence hunt on: "${input.topic}".
 
 Signal data from 5 agents:
 ${signals.map(s => `- ${s}`).join("\n")}
@@ -84,24 +51,12 @@ Assessment:
 - Consensus: ${(input.consensusStrength * 100).toFixed(0)}% of agents agree
 
 Return ONLY valid JSON, no markdown, no explanation:
-{"summary":"2-3 sentence analyst take, direct, data-driven","moltbookTitle":"Punchy title max 80 chars","moltbookBody":"Full post 200-350 words, markdown, first person as AlphaClaw, end with disclaimer","keyInsight":"One-liner max 120 chars, most actionable insight"}`;
+{"summary":"2-3 sentence analyst take, direct, data-driven","moltbookTitle":"Punchy title max 80 chars","moltbookBody":"Full post 200-350 words, markdown, first person as AlphaClaw, end with disclaimer","keyInsight":"One-liner max 120 chars, most actionable insight"}`,
+    1024,
+  );
 
-  const text = await callClaude(prompt, 1024);
-  if (!text) return null;
-
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      log.warn("claude: no JSON in response", { preview: text.slice(0, 100) });
-      return null;
-    }
-    const parsed = JSON.parse(jsonMatch[0]) as ClaudeNarrative;
-    log.info("claude narrative generated", { topic: input.topic });
-    return parsed;
-  } catch (err) {
-    log.warn("claude: JSON parse failed", { error: (err as Error).message });
-    return null;
-  }
+  if (result) log.info("narrative generated", { topic: input.topic });
+  return result;
 }
 
 // ─── Moltbook Post Generator ─────────────────────────────────────────────────
@@ -110,19 +65,11 @@ export async function generateMoltbookPost(
   topic: string,
   finding: string,
 ): Promise<{ title: string; body: string } | null> {
-  const prompt = `You are AlphaClaw, autonomous crypto alpha agent. Write a Moltbook post.
+  return callLLMJson<{ title: string; body: string }>(
+    `You are AlphaClaw, autonomous crypto alpha agent. Write a Moltbook post.
 Topic: ${topic}
 Key finding: ${finding}
-Return ONLY valid JSON: {"title":"max 80 chars","body":"max 200 words, first person, direct, data-driven, end with disclaimer"}`;
-
-  const text = await callClaude(prompt, 512);
-  if (!text) return null;
-
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]) as { title: string; body: string };
-  } catch {
-    return null;
-  }
+Return ONLY valid JSON: {"title":"max 80 chars","body":"max 200 words, first person, direct, data-driven, end with disclaimer"}`,
+    512,
+  );
 }

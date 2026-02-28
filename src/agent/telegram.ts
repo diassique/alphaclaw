@@ -74,14 +74,19 @@ export async function notifyHuntResult(
   if (alpha.weightedConfidence < telegramConfig.alertThreshold) return;
 
   const icon = alpha.weightedConfidence >= 75 ? "🔥" : alpha.weightedConfidence >= 50 ? "📊" : "👀";
-  const signals = alpha.signals.slice(0, 4).join(", ");
+
+  // Use AI narrative if available, otherwise fall back to signals list
+  const body = alpha.narrative?.summary
+    ? alpha.narrative.summary
+    : alpha.signals.slice(0, 4).join(", ");
 
   const msg = [
     `${icon} *AlphaClaw Alert* (${source})`,
     `*Topic:* ${topic}`,
     `*Confidence:* ${alpha.confidence}`,
     `*Action:* ${alpha.recommendation}`,
-    `*Signals:* ${signals}`,
+    body,
+    alpha.narrative?.keyInsight ? `💡 ${alpha.narrative.keyInsight}` : "",
     alpha.breakdown.polymarket ? `*Polymarket:* ${alpha.breakdown.polymarket.market?.slice(0, 60)}` : "",
     alpha.breakdown.defi ? `*DeFi:* ${alpha.breakdown.defi.asset} ${alpha.breakdown.defi.action}` : "",
   ].filter(Boolean).join("\n");
@@ -124,8 +129,9 @@ export async function handleUpdate(
         `*Hunt Complete: ${topic}*`,
         `Confidence: ${alpha.confidence}`,
         `${alpha.recommendation}`,
-        `Signals: ${alpha.signals.slice(0, 4).join(", ")}`,
-      ].join("\n");
+        alpha.narrative?.summary ?? `Signals: ${alpha.signals.slice(0, 4).join(", ")}`,
+        alpha.narrative?.keyInsight ? `💡 ${alpha.narrative.keyInsight}` : "",
+      ].filter(Boolean).join("\n");
       await sendMessage(reply, chatId);
     } catch (err) {
       await sendMessage(`Hunt failed: ${(err as Error).message}`, chatId);

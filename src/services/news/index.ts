@@ -3,6 +3,7 @@ import { ApiCache } from "../../lib/cache.js";
 import { fetchWithRetry } from "../../lib/fetch-retry.js";
 import { validateString, validateInt } from "../../lib/validate.js";
 import { config } from "../../config/env.js";
+import { callLLMJson, isLLMEnabled } from "../../lib/llm.js";
 import type { NewsArticle, CryptoPanicResponse } from "../../types/index.js";
 
 const cache = new ApiCache<NewsArticle[]>();
@@ -95,12 +96,41 @@ app.post("/news", async (req, res) => {
   try {
     const { articles, cached, cacheAge } = await fetchCryptoPanic(topic, limit);
 
-    // Confidence staking score
+    // AI summarization of articles
+    let aiSummary: { sentiment: string; impact: string; keyEvent: string; relevance: number } | undefined;
+    if (isLLMEnabled() && articles.length > 0) {
+      const headlines = articles.slice(0, 8).map((a, i) => `${i + 1}. ${a.title}`).join("\n");
+      const ai = await callLLMJson<{ sentiment: string; impact: string; keyEvent: string; relevance: number }>(
+        `You are a crypto news analyst. Analyze these headlines about "${topic}":
+
+${headlines}
+
+Return ONLY valid JSON:
+{"sentiment":"bullish|bearish|neutral|mixed","impact":"high|medium|low","keyEvent":"<most important event in 15 words>","relevance":<0.0-1.0 how relevant to ${topic}>}`,
+        128,
+      );
+      if (ai) {
+        aiSummary = ai;
+        log.info("news AI summary", { sentiment: ai.sentiment, impact: ai.impact });
+      }
+    }
+
+    // Confidence staking score — AI-enhanced when available
     const recencyBonus = articles.length > 0 && articles[0]
       ? Math.max(0, 1 - (Date.now() - new Date(articles[0].publishedAt).getTime()) / 3_600_000)
       : 0;
-    const confidenceScore = Math.min(1, Math.min(articles.length / 5, 1) * 0.6 + recencyBonus * 0.25 + (cached ? 0 : 0.15));
-    const confidenceBasis = `${articles.length} articles, recency ${recencyBonus.toFixed(2)}, ${cached ? "cached" : "fresh"}`;
+    const aiRelevanceBonus = aiSummary ? aiSummary.relevance * 0.2 : 0;
+    const aiImpactBonus = aiSummary?.impact === "high" ? 0.15 : aiSummary?.impact === "medium" ? 0.08 : 0;
+    const confidenceScore = Math.min(1,
+      Math.min(articles.length / 5, 1) * 0.4
+      + recencyBonus * 0.2
+      + (cached ? 0 : 0.05)
+      + aiRelevanceBonus
+      + aiImpactBonus,
+    );
+    const confidenceBasis = aiSummary
+      ? `AI: ${aiSummary.sentiment}/${aiSummary.impact}, ${articles.length} articles, relevance ${aiSummary.relevance}`
+      : `${articles.length} articles, recency ${recencyBonus.toFixed(2)}, ${cached ? "cached" : "fresh"}`;
 
     log.info("news", { topic, count: articles.length, cached, confidenceScore: confidenceScore.toFixed(3) });
 
@@ -114,6 +144,7 @@ app.post("/news", async (req, res) => {
         confidenceScore: parseFloat(confidenceScore.toFixed(3)),
         confidenceBasis,
         source: "cryptopanic",
+        ...(aiSummary ? { aiSummary } : {}),
       },
       ...(cached ? { cached: true, cacheAge } : {}),
     });

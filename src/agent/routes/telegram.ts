@@ -31,7 +31,7 @@ export function registerTelegramRoutes(app: Application): void {
       doHunt: async (topic: string) => {
         const huntId = randomUUID().slice(0, 12);
         const { news, sentiment, polymarket, defi, whale, warnings, competitionResult } = await callAllServices(topic);
-        const alpha = synthesizeAlpha({
+        const alpha = await synthesizeAlpha({
           huntId,
           sentimentResult: sentiment?.data as { result?: SentimentResult } | null,
           polymarketResult: polymarket?.data as { result?: PolymarketResult } | null,

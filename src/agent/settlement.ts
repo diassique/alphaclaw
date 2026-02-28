@@ -12,6 +12,7 @@
 import { createLogger } from "../lib/logger.js";
 import { createStore } from "../lib/store.js";
 import { fetchWithRetry } from "../lib/fetch-retry.js";
+import { callLLMJson, isLLMEnabled } from "../lib/llm.js";
 import { verifyEntry } from "./memory.js";
 import type { Direction, ServiceKey, StakeResult } from "../types/index.js";
 
@@ -115,13 +116,44 @@ async function fetchPrice(coinId: string): Promise<number> {
   }
 }
 
-/** Extract CoinGecko coin ID from a topic string */
-function topicToCoin(topic: string): string {
+/** AI-powered coin ID cache to avoid redundant LLM calls */
+const aiCoinCache = new Map<string, string>();
+
+/** Extract CoinGecko coin ID from a topic string — AI-enhanced */
+async function topicToCoin(topic: string): Promise<string> {
   const lower = topic.toLowerCase();
+
+  // Fast path: check hardcoded map first
   for (const [keyword, coinId] of Object.entries(TOPIC_TO_COIN)) {
     if (lower.includes(keyword)) return coinId;
   }
-  return "bitcoin"; // default proxy
+
+  // Check AI cache
+  if (aiCoinCache.has(lower)) return aiCoinCache.get(lower)!;
+
+  // AI classification for unknown topics
+  if (isLLMEnabled()) {
+    const ai = await callLLMJson<{ coinId: string }>(
+      `Map this crypto topic to its most relevant CoinGecko coin ID for price tracking.
+
+Topic: "${topic}"
+
+Common IDs: bitcoin, ethereum, solana, matic-network, avalanche-2, cardano, polkadot, chainlink, uniswap, aave, arbitrum, optimism, celestia, sui, aptos, near, dogecoin, shiba-inu, pepe, ripple, litecoin, cosmos, injective-protocol, render-token, fetch-ai, pendle, starknet
+
+If the topic is about DeFi/NFTs/L2s in general, use "ethereum".
+If truly unknown, use "bitcoin" as proxy.
+
+Return ONLY valid JSON: {"coinId":"<coingecko-id>"}`,
+      64,
+    );
+    if (ai?.coinId) {
+      aiCoinCache.set(lower, ai.coinId);
+      log.info("AI topic→coin", { topic, coinId: ai.coinId });
+      return ai.coinId;
+    }
+  }
+
+  return "bitcoin";
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -146,7 +178,7 @@ export async function scheduleSettlement(opts: {
   serviceDirections: { key: ServiceKey; direction: Direction }[];
   memoryEntryId?: string;
 }): Promise<void> {
-  const coinId = topicToCoin(opts.topic);
+  const coinId = await topicToCoin(opts.topic);
   const snapshotPrice = await fetchPrice(coinId);
 
   if (snapshotPrice === 0) {

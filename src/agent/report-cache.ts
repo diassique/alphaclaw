@@ -2,9 +2,8 @@ import { createHash } from "crypto";
 import { createStore } from "../lib/store.js";
 import type { CachedReport } from "../types/index.js";
 
-const REPORT_TTL = 30 * 60_000; // 30 min
-const MAX_CACHED_REPORTS = 10;
-const CLEANUP_INTERVAL = 60_000; // 1 min
+const MAX_CACHED_REPORTS = 200;
+const SAVE_DEBOUNCE = 10_000;
 
 // ─── Persistence ────────────────────────────────────────────────────────────
 
@@ -15,7 +14,7 @@ interface ReportData {
 const store = createStore<ReportData>({
   filename: "reports.json",
   defaultValue: { reports: [] },
-  debounceMs: 10_000,
+  debounceMs: SAVE_DEBOUNCE,
 });
 
 function saveToStore(): void {
@@ -28,19 +27,12 @@ function saveToStore(): void {
 
 export const reportCache = new Map<string, CachedReport>();
 
-// Periodic cleanup — don't keep process alive just for this
-const cleanupTimer = setInterval(() => evictExpired(), CLEANUP_INTERVAL);
-cleanupTimer.unref();
-
-/** Load persisted reports from disk. Skips TTL-expired entries. */
+/** Load persisted reports from disk. All reports survive restarts. */
 export function loadReports(): void {
   store.load();
   const data = store.get();
-  const now = Date.now();
   for (const r of data.reports) {
-    if (now - r.createdAt <= REPORT_TTL) {
-      reportCache.set(r.id, r);
-    }
+    reportCache.set(r.id, r);
   }
 }
 
@@ -48,20 +40,7 @@ export function generateReportId(topic: string, timestamp: string): string {
   return createHash("sha256").update(`${topic}:${timestamp}`).digest("hex").slice(0, 12);
 }
 
-export function evictExpired(): void {
-  const now = Date.now();
-  let evicted = false;
-  for (const [id, report] of reportCache) {
-    if (now - report.createdAt > REPORT_TTL) {
-      reportCache.delete(id);
-      evicted = true;
-    }
-  }
-  if (evicted) saveToStore();
-}
-
 export function cacheReport(report: CachedReport): void {
-  evictExpired();
   if (reportCache.size >= MAX_CACHED_REPORTS) {
     // LRU eviction: remove the entry with oldest lastAccessed (or createdAt as fallback)
     let oldestId: string | undefined;
@@ -86,6 +65,6 @@ export function touchReport(report: CachedReport): void {
   saveToStore();
 }
 
-export function isReportExpired(report: CachedReport): boolean {
-  return Date.now() - report.createdAt > REPORT_TTL;
+export function isReportExpired(_report: CachedReport): boolean {
+  return false; // reports persist indefinitely
 }

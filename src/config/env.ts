@@ -4,7 +4,7 @@ import { randomBytes } from "crypto";
 dotenv.config();
 
 export interface AppConfig {
-  claude: {
+  groq: {
     apiKey: string;
     model: string;
   };
@@ -58,9 +58,9 @@ function envInt(key: string, fallback: number): number {
 }
 
 export const config: AppConfig = Object.freeze({
-  claude: Object.freeze({
-    apiKey: env("ANTHROPIC_API_KEY", ""),
-    model: env("CLAUDE_MODEL", "claude-sonnet-4-6"),
+  groq: Object.freeze({
+    apiKey: env("GROQ_API_KEY", ""),
+    model: env("GROQ_MODEL", "llama-3.3-70b-versatile"),
   }),
   walletAddress: env("WALLET_ADDRESS", ""),
   agentPrivateKey: env("AGENT_PRIVATE_KEY", ""),

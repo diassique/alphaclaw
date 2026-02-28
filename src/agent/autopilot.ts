@@ -110,7 +110,7 @@ async function runHunt(): Promise<void> {
   try {
     const { news, sentiment, polymarket, defi, whale, external, warnings, competitionResult } = await callAllServices(topic);
 
-    const alpha = synthesizeAlpha({
+    const alpha = await synthesizeAlpha({
       huntId,
       sentimentResult: sentiment?.data as { result?: SentimentResult } | null,
       polymarketResult: polymarket?.data as { result?: PolymarketResult } | null,

@@ -84,7 +84,7 @@ function AlphaResult({ alpha }: { alpha: HuntAlphaEvent }) {
           }}
         >
           <div style={{ fontSize: ".7rem", fontWeight: 600, color: "var(--accent2)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: ".4rem" }}>
-            AI Analysis (Claude)
+            AI Analysis
           </div>
           <div style={{ fontSize: ".85rem", color: "var(--text)", lineHeight: 1.6 }}>
             {alpha.narrative.summary}
@@ -425,33 +425,6 @@ export function HuntPage() {
       {/* Hunt Form */}
       <HuntBox onHunt={handleHunt} hunting={hunting} />
 
-      {/* Dynamic Pricing */}
-      <div className="section-title">Dynamic Pricing</div>
-      {pricing.length > 0 ? (
-        <PricingTable pricing={pricing} totalBuyCost={totalBuyCost} />
-      ) : (
-        <div className="panel" style={{ marginBottom: "2rem" }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Service</th>
-                <th>Base Price</th>
-                <th>Effective Price</th>
-                <th>Multiplier</th>
-                <th>Reputation</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan={5} style={{ textAlign: "center", color: "var(--text3)" }}>
-                  Loading pricing...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
-
       {/* Live Stream */}
       <div className="section-title">Live Stream</div>
       {hasHunted ? (
@@ -492,6 +465,33 @@ export function HuntPage() {
 
       {/* Payment Log */}
       <PaymentLog txLog={txLog} />
+
+      {/* Dynamic Pricing */}
+      <div className="section-title">Dynamic Pricing</div>
+      {pricing.length > 0 ? (
+        <PricingTable pricing={pricing} totalBuyCost={totalBuyCost} />
+      ) : (
+        <div className="panel" style={{ marginBottom: "2rem" }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>Base Price</th>
+                <th>Effective Price</th>
+                <th>Multiplier</th>
+                <th>Reputation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan={5} style={{ textAlign: "center", color: "var(--text3)" }}>
+                  Loading pricing...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }

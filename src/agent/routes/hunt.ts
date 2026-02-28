@@ -28,7 +28,7 @@ export function registerHuntRoutes(app: Application): void {
 
     log.info("hunt", { huntId, topic, warnings: warnings.length > 0 ? warnings : undefined });
 
-    const alpha = synthesizeAlpha({
+    const alpha = await synthesizeAlpha({
       huntId,
       sentimentResult:  sentiment?.data as { result?: SentimentResult } | null,
       polymarketResult: polymarket?.data as { result?: PolymarketResult } | null,

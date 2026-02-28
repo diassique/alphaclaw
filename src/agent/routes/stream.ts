@@ -198,7 +198,7 @@ export function registerStreamRoutes(app: Application): void {
         send("competition", competitionResult);
       }
 
-      const alpha = synthesizeAlpha({
+      const alpha = await synthesizeAlpha({
         huntId,
         sentimentResult:  sentimentRes?.data as { result?: SentimentResult } | null,
         polymarketResult: polymarketRes?.data as { result?: PolymarketResult } | null,

@@ -23,8 +23,9 @@ import {
 } from "./reputation.js";
 import { getAllDynamicPrices } from "../config/services.js";
 import { getConfidenceAdjustment } from "./memory.js";
+import { callLLMJson, isLLMEnabled } from "../lib/llm.js";
 
-export function synthesizeAlpha({
+export async function synthesizeAlpha({
   huntId,
   sentimentResult,
   polymarketResult,
@@ -44,7 +45,7 @@ export function synthesizeAlpha({
   warnings?: string[];
   competitionResult?: CompetitionResult;
   externalResults?: Record<string, ServiceResponse | null>;
-}): AlphaSynthesis {
+}): Promise<AlphaSynthesis> {
   const sentiment  = sentimentResult?.result as SentimentResult | undefined;
   const polymarket = polymarketResult?.result as PolymarketResult | undefined;
   const defi       = defiResult?.result as DefiResult | undefined;
@@ -190,11 +191,40 @@ export function synthesizeAlpha({
 
   const confidence = Math.min(Math.round(weightedConfidence), 100);
 
-  const recommendation =
+  // Static fallback recommendation
+  const staticRec =
     confidence >= 75 ? "STRONG BUY SIGNAL — multiple confirming indicators" :
     confidence >= 55 ? "MODERATE OPPORTUNITY — proceed with position sizing" :
     confidence >= 35 ? "WATCH CLOSELY — early signals forming" :
                        "WAIT — insufficient signal strength";
+
+  // AI-powered recommendation that reasons about signal conflicts
+  let recommendation = staticRec;
+  if (isLLMEnabled()) {
+    const signalSummary = [
+      sentiment ? `Sentiment: ${sentiment.label} (${sentiment.score})` : null,
+      polymarket?.topSignal ? `Polymarket: ${polymarket.topSignal} alpha` : null,
+      defi?.topOpportunity ? `DeFi: ${defi.topOpportunity.symbol} ${defi.topOpportunity.alphaLevel} (${defi.topOpportunity.change24h}% 24h)` : null,
+      news?.articles?.length ? `News: ${news.articles.length} articles` : null,
+      whale ? `Whale: ${whale.signal} (${whale.whaleCount} whales)` : null,
+    ].filter(Boolean).join(", ");
+
+    const ai = await callLLMJson<{ recommendation: string }>(
+      `You are AlphaClaw, a crypto alpha agent. Generate a 1-sentence actionable trading recommendation.
+
+Signals: ${signalSummary}
+Consensus: ${consensus} (${(consensusStrength * 100).toFixed(0)}% agree)
+Confidence: ${confidence}%
+
+If signals conflict (e.g. sentiment bearish but whales accumulating), note the contrarian opportunity.
+If signals align, be direct about the opportunity.
+Keep it under 100 chars. Be specific to the data, not generic.
+
+Return ONLY valid JSON: {"recommendation":"<your recommendation>"}`,
+      96,
+    );
+    if (ai?.recommendation) recommendation = ai.recommendation;
+  }
 
   const topDefi = defi?.topOpportunity;
   const topPoly = polymarket?.opportunities?.[0];
